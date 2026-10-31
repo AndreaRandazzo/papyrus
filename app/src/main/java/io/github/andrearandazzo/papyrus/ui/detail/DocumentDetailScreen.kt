@@ -69,6 +69,7 @@ import io.github.andrearandazzo.papyrus.ui.DocumentIntents
 import io.github.andrearandazzo.papyrus.ui.components.DateField
 import io.github.andrearandazzo.papyrus.ui.components.DocumentPlaceholder
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
+import io.github.andrearandazzo.papyrus.ui.components.categoryStyle
 import io.github.andrearandazzo.papyrus.ui.formatInstantDate
 import io.github.andrearandazzo.papyrus.ui.home.label
 import io.github.andrearandazzo.papyrus.ui.rememberPreview
@@ -340,6 +341,7 @@ private fun CategoryDropdown(
             categories.forEach { category ->
                 DropdownMenuItem(
                     text = { Text(category.name) },
+                    leadingIcon = { SymbolIcon(categoryStyle(category.name).icon, contentDescription = null) },
                     onClick = { onSelect(category.id); expanded = false },
                 )
             }

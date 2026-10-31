@@ -17,6 +17,7 @@ import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
+import io.github.andrearandazzo.papyrus.data.UserPreferences
 import io.github.andrearandazzo.papyrus.data.backup.BackupManager
 import io.github.andrearandazzo.papyrus.data.backup.InvalidBackupException
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +59,17 @@ class HomeViewModel(
     private val documentRepository: DocumentRepository,
     categoryRepository: CategoryRepository,
     private val backupManager: BackupManager,
+    private val preferences: UserPreferences,
 ) : ViewModel() {
+
+    /** List or grid; remembered across app restarts. */
+    var gridView by mutableStateOf(preferences.gridView)
+        private set
+
+    fun toggleView() {
+        gridView = !gridView
+        preferences.gridView = gridView
+    }
 
     /** Search text. Compose state, so the text field updates without lag while typing. */
     var query by mutableStateOf("")
@@ -186,7 +197,7 @@ class HomeViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as PapyrusApp
-                HomeViewModel(app.documentRepository, app.categoryRepository, app.backupManager)
+                HomeViewModel(app.documentRepository, app.categoryRepository, app.backupManager, app.preferences)
             }
         }
     }

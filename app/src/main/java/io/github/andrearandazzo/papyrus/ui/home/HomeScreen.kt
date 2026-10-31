@@ -87,6 +87,7 @@ import io.github.andrearandazzo.papyrus.ui.components.PaperIllustration
 import io.github.andrearandazzo.papyrus.ui.components.PrivacyNote
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
+import io.github.andrearandazzo.papyrus.ui.components.categoryStyle
 import io.github.andrearandazzo.papyrus.ui.daysUntil
 import io.github.andrearandazzo.papyrus.ui.expiryText
 import io.github.andrearandazzo.papyrus.ui.formatInstantDate
@@ -123,7 +124,6 @@ fun HomeScreen(
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilters by rememberSaveable { mutableStateOf(false) }
-    var gridView by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Document?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -166,8 +166,8 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 showViewToggle = !state.libraryEmpty,
-                gridView = gridView,
-                onToggleView = { gridView = !gridView },
+                gridView = viewModel.gridView,
+                onToggleView = viewModel::toggleView,
                 canExport = !state.libraryEmpty && !busy,
                 busy = busy,
                 onCategories = onManageCategories,
@@ -205,7 +205,7 @@ fun HomeScreen(
                         onSort = { order -> viewModel.updateFilter { it.copy(sort = order) } },
                     )
                     val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
-                    if (gridView) {
+                    if (viewModel.gridView) {
                         DocumentGrid(state.documents, categoryNames, actions)
                     } else {
                         DocumentList(state.documents, categoryNames, actions)
@@ -408,19 +408,24 @@ private fun FilterRow(
             )
         }
         item {
-            CategoryChip(stringResource(R.string.filter_all), filter.categoryId == null) { onSelectCategory(null) }
+            CategoryChip(stringResource(R.string.filter_all), icon = null, filter.categoryId == null) {
+                onSelectCategory(null)
+            }
         }
         items(categories, key = { it.id }) { category ->
-            CategoryChip(category.name, category.id == filter.categoryId) { onSelectCategory(category) }
+            CategoryChip(category.name, categoryStyle(category.name).icon, category.id == filter.categoryId) {
+                onSelectCategory(category)
+            }
         }
     }
 }
 
 @Composable
-private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun CategoryChip(label: String, icon: Int?, selected: Boolean, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
+        leadingIcon = icon?.let { { SymbolIcon(it, contentDescription = null, modifier = Modifier.size(18.dp)) } },
         label = { Text(label) },
         modifier = Modifier.height(40.dp),
     )
@@ -495,9 +500,10 @@ private fun DocumentGrid(documents: List<Document>, categoryNames: Map<Long, Str
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(documents, key = { it.id }) { document ->
+            // Same corner shape as the preview tile, so the press highlight doesn't cut its border.
             Column(
                 Modifier
-                    .clip(MaterialTheme.shapes.medium)
+                    .clip(MaterialTheme.shapes.small)
                     .clickable { actions.edit(document) },
             ) {
                 DocumentTile(document, Modifier.fillMaxWidth().aspectRatio(0.8f), previewWidth = 200.dp)
