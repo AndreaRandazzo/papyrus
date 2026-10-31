@@ -20,6 +20,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -76,6 +89,7 @@ fun HomeScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val importing by viewModel.importing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showFilters by rememberSaveable { mutableStateOf(false) }
     val resources = LocalContext.current.resources
 
     // The system picker needs no storage permission: the user chooses exactly what we can read.
@@ -117,45 +131,110 @@ fun HomeScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (importing) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (state.categories.isNotEmpty()) {
-                CategoryFilter(state.categories, state.selectedCategory, viewModel::selectCategory)
-            }
-            when {
-                state.libraryEmpty -> EmptyState(
-                    stringResource(R.string.empty_title),
-                    stringResource(R.string.empty_body),
+            if (state.libraryEmpty) {
+                EmptyState(stringResource(R.string.empty_title), stringResource(R.string.empty_body))
+            } else {
+                SearchField(viewModel.query, viewModel::search)
+                FilterRow(
+                    categories = state.categories,
+                    filter = state.filter,
+                    onSelectCategory = viewModel::selectCategory,
+                    onOpenFilters = { showFilters = true },
                 )
-                state.documents.isEmpty() -> EmptyState(
-                    stringResource(R.string.empty_category_title),
-                    stringResource(R.string.empty_category_body),
-                )
-                else -> DocumentList(state.documents, state.categories, onOpenDocument)
+                when {
+                    state.documents.isNotEmpty() -> DocumentList(state.documents, state.categories, onOpenDocument)
+                    // Only a category is selected: suggest adding documents to it.
+                    state.filter.categoryId != null && state.filter.copy(categoryId = null).isFiltering.not() ->
+                        EmptyState(
+                            stringResource(R.string.empty_category_title),
+                            stringResource(R.string.empty_category_body),
+                        )
+                    else -> EmptyState(
+                        stringResource(R.string.no_results_title),
+                        stringResource(R.string.no_results_body),
+                        action = {
+                            TextButton(onClick = viewModel::clearFilters) {
+                                Text(stringResource(R.string.clear_filters))
+                            }
+                        },
+                    )
+                }
             }
         }
+    }
+
+    if (showFilters) {
+        FiltersSheet(
+            filter = state.filter,
+            onChange = viewModel::updateFilter,
+            onDismiss = { showFilters = false },
+        )
     }
 }
 
 @Composable
-private fun CategoryFilter(
+private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text(stringResource(R.string.search_hint)) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.clear_search))
+                }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(28.dp),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        // Results update while typing, so the search key just closes the keyboard.
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+}
+
+/** "Filters" chip, then "All" and one chip per category. */
+@Composable
+private fun FilterRow(
     categories: List<Category>,
-    selected: Category?,
-    onSelect: (Category?) -> Unit,
+    filter: DocumentFilter,
+    onSelectCategory: (Category?) -> Unit,
+    onOpenFilters: () -> Unit,
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
+            val count = filter.panelFilterCount
             FilterChip(
-                selected = selected == null,
-                onClick = { onSelect(null) },
+                selected = count > 0,
+                onClick = onOpenFilters,
+                label = {
+                    Text(
+                        if (count > 0) stringResource(R.string.filters_count, count)
+                        else stringResource(R.string.filters),
+                    )
+                },
+                trailingIcon = { Icon(Icons.Filled.ArrowDropDown, contentDescription = null) },
+            )
+        }
+        item {
+            FilterChip(
+                selected = filter.categoryId == null,
+                onClick = { onSelectCategory(null) },
                 label = { Text(stringResource(R.string.filter_all)) },
             )
         }
         items(categories, key = { it.id }) { category ->
             FilterChip(
-                selected = category.id == selected?.id,
-                onClick = { onSelect(category) },
+                selected = category.id == filter.categoryId,
+                onClick = { onSelectCategory(category) },
                 label = { Text(category.name) },
             )
         }
@@ -163,7 +242,7 @@ private fun CategoryFilter(
 }
 
 @Composable
-private fun EmptyState(title: String, body: String) {
+private fun EmptyState(title: String, body: String, action: @Composable () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
@@ -171,6 +250,7 @@ private fun EmptyState(title: String, body: String) {
     ) {
         Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
         Text(body, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        action()
     }
 }
 

@@ -7,6 +7,27 @@
     <string name="import_documents">Add documents</string>
     <string name="filter_all">All</string>
 
+    <!-- Search and filters -->
+    <string name="search_hint">Search title, notes, category</string>
+    <string name="clear_search">Clear search</string>
+    <string name="filters">Filters</string>
+    <string name="filters_count">Filters (%d)</string>
+    <string name="filter_type">Type</string>
+    <string name="type_pdf">PDF</string>
+    <string name="type_word">Word</string>
+    <string name="type_image">Images</string>
+    <string name="type_other">Other</string>
+    <string name="filter_added">Date added</string>
+    <string name="any_date">Any date</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_newest">Newest first</string>
+    <string name="sort_oldest">Oldest first</string>
+    <string name="sort_title">Title A–Z</string>
+    <string name="sort_expiry">Expiring soonest</string>
+    <string name="no_results_title">No matching documents</string>
+    <string name="no_results_body">Try other words or fewer filters.</string>
+    <string name="clear_filters">Clear search and filters</string>
+
     <string name="kind_pdf">PDF</string>
     <string name="kind_word">DOC</string>
     <string name="kind_image">IMG</string>
