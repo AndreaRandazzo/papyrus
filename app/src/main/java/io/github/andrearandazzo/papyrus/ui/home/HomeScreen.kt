@@ -102,9 +102,6 @@ private val IMPORTABLE_TYPES = arrayOf(
     "image/*",
 )
 
-/** Some file providers label ZIP files differently, so accept all the common types. */
-private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
-
 /** What a document's "⋮" menu can do. */
 private class DocumentActions(
     val open: (Document) -> Unit,
@@ -117,11 +114,11 @@ private class DocumentActions(
 @Composable
 fun HomeScreen(
     onOpenDocument: (Long) -> Unit,
-    onManageCategories: () -> Unit,
+    onOpenBackup: () -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val importing by viewModel.importing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Document?>(null) }
@@ -129,18 +126,11 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val noAppMessage = stringResource(R.string.no_app_to_open)
 
-    // The system pickers need no storage permission: the user chooses exactly what we can read or write.
+    // The system picker needs no storage permission: the user chooses exactly what we can read.
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         viewModel.import(uris)
     }
-    val backupTarget = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
-        uri?.let(viewModel::exportBackup)
-    }
-    val backupSource = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let(viewModel::restoreBackup)
-    }
     val addDocuments = { picker.launch(IMPORTABLE_TYPES) }
-    val restoreBackup = { backupSource.launch(BACKUP_TYPES) }
 
     val actions = DocumentActions(
         open = { document ->
@@ -157,22 +147,27 @@ fun HomeScreen(
     )
 
     LaunchedEffect(viewModel) {
-        viewModel.messages.collect { message ->
-            snackbarHostState.showSnackbar(message.text(context.resources))
+        viewModel.importResults.collect { result ->
+            snackbarHostState.showSnackbar(result.text(context.resources))
         }
     }
 
     Scaffold(
         topBar = {
-            HomeTopBar(
-                showViewToggle = !state.libraryEmpty,
-                gridView = viewModel.gridView,
-                onToggleView = viewModel::toggleView,
-                canExport = !state.libraryEmpty && !busy,
-                busy = busy,
-                onCategories = onManageCategories,
-                onExport = { backupTarget.launch("papyrus-backup-${LocalDate.now()}.zip") },
-                onRestore = restoreBackup,
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
+                actions = {
+                    if (!state.libraryEmpty) {
+                        IconButton(onClick = viewModel::toggleView) {
+                            if (viewModel.gridView) {
+                                SymbolIcon(R.drawable.ic_view_agenda, contentDescription = stringResource(R.string.list_view))
+                            } else {
+                                SymbolIcon(R.drawable.ic_grid_view, contentDescription = stringResource(R.string.grid_view))
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             )
         },
         floatingActionButton = {
@@ -185,9 +180,9 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (importing) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (state.libraryEmpty) {
-                FirstLaunch(onAdd = addDocuments, onRestore = restoreBackup, busy = busy)
+                FirstLaunch(onAdd = addDocuments, onRestore = onOpenBackup, busy = importing)
                 return@Column
             }
             SearchField(viewModel.query, viewModel::search)
@@ -258,72 +253,6 @@ fun HomeScreen(
             },
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeTopBar(
-    showViewToggle: Boolean,
-    gridView: Boolean,
-    onToggleView: () -> Unit,
-    canExport: Boolean,
-    busy: Boolean,
-    onCategories: () -> Unit,
-    onExport: () -> Unit,
-    onRestore: () -> Unit,
-) {
-    var showMenu by remember { mutableStateOf(false) }
-    TopAppBar(
-        title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
-        navigationIcon = {
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    SymbolIcon(R.drawable.ic_menu, contentDescription = stringResource(R.string.open_menu))
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    shape = MaterialTheme.shapes.medium,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ) {
-                    MenuItem(R.drawable.ic_folder, stringResource(R.string.categories)) {
-                        showMenu = false; onCategories()
-                    }
-                    MenuItem(R.drawable.ic_upload, stringResource(R.string.backup_export), enabled = canExport) {
-                        showMenu = false; onExport()
-                    }
-                    MenuItem(R.drawable.ic_history, stringResource(R.string.backup_restore), enabled = !busy) {
-                        showMenu = false; onRestore()
-                    }
-                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    ) {
-                        SymbolIcon(R.drawable.ic_lock, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            stringResource(R.string.menu_private),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        },
-        actions = {
-            if (showViewToggle) {
-                IconButton(onClick = onToggleView) {
-                    if (gridView) {
-                        SymbolIcon(R.drawable.ic_view_agenda, contentDescription = stringResource(R.string.list_view))
-                    } else {
-                        SymbolIcon(R.drawable.ic_grid_view, contentDescription = stringResource(R.string.grid_view))
-                    }
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-    )
 }
 
 @Composable
@@ -674,19 +603,6 @@ private fun SortOrder.headerLabel() = when (this) {
     SortOrder.EXPIRY -> R.string.sort_expiry
 }
 
-private fun HomeMessage.text(resources: Resources): String = when (this) {
-    is HomeMessage.Imported ->
-        if (failed == 0) resources.getQuantityString(R.plurals.import_done, imported, imported)
-        else resources.getQuantityString(R.plurals.import_failed, failed, failed)
-    is HomeMessage.BackupSaved -> resources.getQuantityString(R.plurals.backup_saved, documents, documents)
-    HomeMessage.BackupFailed -> resources.getString(R.string.backup_failed)
-    is HomeMessage.Restored -> buildString {
-        append(resources.getQuantityString(R.plurals.restore_done, restored, restored))
-        if (alreadyPresent > 0) {
-            append(" · ")
-            append(resources.getQuantityString(R.plurals.restore_skipped, alreadyPresent, alreadyPresent))
-        }
-    }
-    HomeMessage.NotABackup -> resources.getString(R.string.restore_not_a_backup)
-    HomeMessage.RestoreFailed -> resources.getString(R.string.restore_failed)
-}
+private fun ImportResult.text(resources: Resources): String =
+    if (failed == 0) resources.getQuantityString(R.plurals.import_done, imported, imported)
+    else resources.getQuantityString(R.plurals.import_failed, failed, failed)

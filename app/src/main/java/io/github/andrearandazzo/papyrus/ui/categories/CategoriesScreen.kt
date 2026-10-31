@@ -69,23 +69,13 @@ private sealed interface CategoryDialog {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoriesScreen(
-    onBack: () -> Unit,
-    viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory),
-) {
+fun CategoriesScreen(viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)) {
     val rows by viewModel.categories.collectAsStateWithLifecycle()
     var dialog by remember { mutableStateOf<CategoryDialog?>(null) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.categories), style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        SymbolIcon(R.drawable.ic_arrow_back, contentDescription = stringResource(R.string.back))
-                    }
-                },
-            )
+            TopAppBar(title = { Text(stringResource(R.string.categories), style = MaterialTheme.typography.titleLarge) })
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(

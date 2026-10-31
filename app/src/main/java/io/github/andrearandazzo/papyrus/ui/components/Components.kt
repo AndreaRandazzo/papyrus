@@ -112,10 +112,14 @@ fun PaperIllustration(@DrawableRes symbol: Int, backColor: Color, modifier: Modi
 
 /** Rounded card with a lock, reminding that nothing leaves the phone. */
 @Composable
-fun PrivacyNote(text: String, modifier: Modifier = Modifier) {
+fun PrivacyNote(
+    text: String,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+) {
     androidx.compose.foundation.layout.Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
+            .background(containerColor, MaterialTheme.shapes.medium)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),

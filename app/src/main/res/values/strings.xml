@@ -2,8 +2,6 @@
     <string name="app_name">Papyrus</string>
 
     <!-- Library -->
-    <string name="open_menu">Menu</string>
-    <string name="menu_private">Private and offline</string>
     <string name="grid_view">Grid view</string>
     <string name="list_view">List view</string>
     <string name="search_hint">Search documents</string>
@@ -153,6 +151,46 @@
     </plurals>
     <string name="restore_not_a_backup">This file isn\'t a Papyrus backup, or it is damaged. Nothing was changed.</string>
     <string name="restore_failed">The backup could not be restored. Nothing was changed.</string>
+
+    <!-- Navigation -->
+    <string name="nav_library">Library</string>
+    <string name="nav_expiring">Expiring</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_backup">Backup</string>
+
+    <!-- Expiring -->
+    <plurals name="attention_title">
+        <item quantity="one">%d needs your attention</item>
+        <item quantity="other">%d need your attention</item>
+    </plurals>
+    <string name="attention_body">Review expired and upcoming documents</string>
+    <string name="all_clear_title">Nothing needs your attention</string>
+    <string name="all_clear_body">No documents expired or expiring in the next 30 days.</string>
+    <string name="section_expired">Expired</string>
+    <string name="section_soon">Next 30 days</string>
+    <string name="section_later">Later</string>
+    <string name="expiring_empty_title">No expiry dates yet</string>
+    <string name="expiring_empty_body">Add an expiry date in a document\'s details and it will show up here.</string>
+    <string name="expiring_info_title">About this list</string>
+    <string name="expiring_info_body">Documents with an expiry date, soonest first. Anything expired or expiring within 30 days needs your attention and is counted on the tab.</string>
+
+    <!-- Backup screen -->
+    <string name="backup_hero_title">Keep a copy, just in case</string>
+    <string name="backup_hero_body">Your backup is a single file, saved wherever you choose. It isn\'t encrypted, so keep it somewhere safe.</string>
+    <string name="last_backup">Last backup</string>
+    <string name="never">Never</string>
+    <string name="backup_due">Backup due</string>
+    <string name="backup_up_to_date">Up to date</string>
+    <string name="backup_reminder_old">It\'s been over 30 days. Make a fresh backup to keep recent documents safe.</string>
+    <string name="backup_reminder_never">You haven\'t made a backup yet. If this phone is lost, your documents are lost too.</string>
+    <string name="backup_export_body">Save a copy of all your documents</string>
+    <string name="backup_restore_body">Bring back documents from a backup file</string>
+    <string name="about_papyrus">About Papyrus</string>
+    <string name="about_version">Version</string>
+    <string name="about_license">Open-source license</string>
+    <string name="about_license_value">GNU GPL v3</string>
+    <string name="about_source">Source code</string>
+    <string name="about_source_body">View the project repository</string>
 
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
