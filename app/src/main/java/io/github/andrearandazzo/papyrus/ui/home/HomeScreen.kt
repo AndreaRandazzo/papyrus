@@ -208,7 +208,7 @@ fun HomeScreen(
                 }
                 // Only a category is selected: suggest adding documents to it.
                 state.filter.categoryId != null && !state.filter.copy(categoryId = null).isFiltering -> EmptyState(
-                    illustration = R.drawable.ic_folder,
+                    illustration = R.drawable.ic_duo_folder,
                     title = stringResource(R.string.empty_category_title),
                     body = stringResource(R.string.empty_category_body),
                     actionIcon = R.drawable.ic_add,
@@ -216,7 +216,7 @@ fun HomeScreen(
                     onAction = addDocuments,
                 )
                 else -> EmptyState(
-                    illustration = R.drawable.ic_search,
+                    illustration = R.drawable.ic_duo_search,
                     title = stringResource(R.string.no_results_title),
                     body = stringResource(R.string.no_results_body),
                     actionIcon = R.drawable.ic_filter_alt_off,
@@ -525,7 +525,7 @@ private fun FirstLaunch(onAdd: () -> Unit, onRestore: () -> Unit, busy: Boolean)
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.weight(1f))
-        PaperIllustration(R.drawable.ic_description, backColor = MaterialTheme.colorScheme.primaryContainer)
+        PaperIllustration(R.drawable.ic_duo_document, backColor = MaterialTheme.colorScheme.primaryContainer)
         Spacer(Modifier.height(32.dp))
         Text(
             stringResource(R.string.empty_title),

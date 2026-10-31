@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Material Symbols Rounded "view_agenda", weight 500 (Apache License 2.0): bolder, as in the design. -->
+<!-- Phosphor "rows" (regular), MIT License: https://github.com/phosphor-icons/core -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="960"
-    android:viewportHeight="960">
-    <group android:translateY="960">
+    android:viewportWidth="256"
+    android:viewportHeight="256">
         <path
             android:fillColor="#FF000000"
-            android:pathData="M202.87-518.09q-37.78 0-64.39-26.61-26.61-26.6-26.61-64.39v-152.82q0-37.79 26.61-64.39 26.61-26.61 64.39-26.61h554.26q37.78 0 64.39 26.61 26.61 26.6 26.61 64.39v152.82q0 37.79-26.61 64.39-26.61 26.61-64.39 26.61H202.87Zm0-91h554.26v-152.82H202.87v152.82Zm0 502q-37.78 0-64.39-26.61-26.61-26.6-26.61-64.39v-152.82q0-37.79 26.61-64.39 26.61-26.61 64.39-26.61h554.26q37.78 0 64.39 26.61 26.61 26.6 26.61 64.39v152.82q0 37.79-26.61 64.39-26.61 26.61-64.39 26.61H202.87Zm0-91h554.26v-152.82H202.87v152.82Zm0-563.82v152.82-152.82Zm0 411v152.82-152.82Z" />
-    </group>
+            android:pathData="M208,136H48a16,16,0,0,0-16,16v40a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V152A16,16,0,0,0,208,136Zm0,56H48V152H208v40Zm0-144H48A16,16,0,0,0,32,64v40a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V64A16,16,0,0,0,208,48Zm0,56H48V64H208v40Z" />
 </vector>

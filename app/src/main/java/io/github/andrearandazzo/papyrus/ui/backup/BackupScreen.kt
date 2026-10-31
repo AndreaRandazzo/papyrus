@@ -103,7 +103,7 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
                 LastBackupCard(viewModel.lastBackupAt, due)
                 if (due) Reminder(neverBackedUp = viewModel.lastBackupAt == null)
                 ActionCard(
-                    icon = R.drawable.ic_upload,
+                    icon = R.drawable.ic_duo_upload,
                     iconBackground = MaterialTheme.colorScheme.primaryContainer,
                     title = stringResource(R.string.backup_export),
                     body = stringResource(R.string.backup_export_body),
@@ -111,7 +111,7 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
                     onClick = { target.launch("papyrus-backup-${LocalDate.now()}.zip") },
                 )
                 ActionCard(
-                    icon = R.drawable.ic_history,
+                    icon = R.drawable.ic_duo_restore,
                     iconBackground = Paper,
                     title = stringResource(R.string.backup_restore),
                     body = stringResource(R.string.backup_restore_body),
@@ -136,7 +136,7 @@ private fun Hero() {
             Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium),
             contentAlignment = Alignment.Center,
         ) {
-            SymbolIcon(R.drawable.ic_shield, contentDescription = null)
+            SymbolIcon(R.drawable.ic_duo_shield, contentDescription = null)
         }
         Spacer(Modifier.width(16.dp))
         Column {

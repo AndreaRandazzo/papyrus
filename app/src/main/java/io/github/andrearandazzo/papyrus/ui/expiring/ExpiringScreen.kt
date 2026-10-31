@@ -122,7 +122,7 @@ private fun AttentionCard(urgentCount: Int) {
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painterResource(if (urgentCount > 0) R.drawable.ic_event_upcoming else R.drawable.ic_check),
+                painterResource(if (urgentCount > 0) R.drawable.ic_duo_calendar else R.drawable.ic_check),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimary,
             )
@@ -240,7 +240,7 @@ private fun NoExpiryDates(modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(48.dp))
-        PaperIllustration(R.drawable.ic_event_upcoming, backColor = MaterialTheme.colorScheme.primaryContainer)
+        PaperIllustration(R.drawable.ic_duo_calendar, backColor = MaterialTheme.colorScheme.primaryContainer)
         Spacer(Modifier.height(28.dp))
         Text(
             stringResource(R.string.expiring_empty_title),

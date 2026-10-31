@@ -124,7 +124,7 @@ fun PrivacyNote(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        SymbolIcon(R.drawable.ic_lock, contentDescription = null)
+        SymbolIcon(R.drawable.ic_duo_lock, contentDescription = null)
         Text(text, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
     }
 }

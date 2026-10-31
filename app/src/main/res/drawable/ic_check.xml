@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Material Symbols "check" (Apache License 2.0). -->
+<!-- Phosphor "check" (regular), MIT License: https://github.com/phosphor-icons/core -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="960"
-    android:viewportHeight="960">
-    <group android:translateY="960">
+    android:viewportWidth="256"
+    android:viewportHeight="256">
         <path
             android:fillColor="#FF000000"
-            android:pathData="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z" />
-    </group>
+            android:pathData="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z" />
 </vector>
