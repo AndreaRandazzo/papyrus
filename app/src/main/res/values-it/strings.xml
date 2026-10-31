@@ -1,0 +1,231 @@
+<resources>
+    <!-- Italian. Keep every name in sync with values/strings.xml; missing ones fall back to English. -->
+
+    <!-- Library -->
+    <string name="grid_view">Vista a griglia</string>
+    <string name="list_view">Vista a elenco</string>
+    <string name="search_hint">Cerca documenti</string>
+    <string name="clear_search">Cancella ricerca</string>
+    <string name="filters">Filtri</string>
+    <string name="filter_all">Tutti</string>
+    <string name="import_documents">Aggiungi documenti</string>
+    <string name="document_actions">Azioni sul documento</string>
+    <string name="edit_details">Modifica dettagli</string>
+    <plurals name="document_count">
+        <item quantity="one">%d documento</item>
+        <item quantity="many">%d documenti</item>
+        <item quantity="other">%d documenti</item>
+    </plurals>
+
+    <string name="empty_title">I tuoi documenti, sempre a portata di mano</string>
+    <string name="empty_body">Aggiungi i tuoi documenti importanti e ritrovali in un attimo quando ti servono.</string>
+    <string name="add_first_document">Aggiungi il primo documento</string>
+    <string name="privacy_note">Tutto resta su questo dispositivo.\nNessun account. Nessun cloud.</string>
+    <string name="empty_category_title">Ancora niente qui</string>
+    <string name="empty_category_body">I documenti che aggiungi ora finiscono direttamente in questa categoria.</string>
+    <string name="no_results_title">Nessun documento trovato</string>
+    <string name="no_results_body">Prova un\'altra ricerca o togli qualche filtro.</string>
+    <string name="clear_filters">Cancella filtri</string>
+
+    <string name="kind_pdf">PDF</string>
+    <string name="kind_word">Word</string>
+    <string name="kind_image">Foto</string>
+    <string name="kind_other">File</string>
+
+    <plurals name="import_done">
+        <item quantity="one">%d documento aggiunto</item>
+        <item quantity="many">%d documenti aggiunti</item>
+        <item quantity="other">%d documenti aggiunti</item>
+    </plurals>
+    <plurals name="import_failed">
+        <item quantity="one">Impossibile aggiungere %d file</item>
+        <item quantity="many">Impossibile aggiungere %d file</item>
+        <item quantity="other">Impossibile aggiungere %d file</item>
+    </plurals>
+
+    <!-- Expiry -->
+    <string name="expires_on">Scade il %s</string>
+    <string name="expired_on">Scaduto il %s</string>
+    <string name="expires_today">Scade oggi</string>
+    <plurals name="expires_in_days">
+        <item quantity="one">Scade domani</item>
+        <item quantity="many">Scade tra %d giorni</item>
+        <item quantity="other">Scade tra %d giorni</item>
+    </plurals>
+    <plurals name="expires_in_weeks">
+        <item quantity="one">Scade tra %d settimana</item>
+        <item quantity="many">Scade tra %d settimane</item>
+        <item quantity="other">Scade tra %d settimane</item>
+    </plurals>
+
+    <!-- Filters and sorting -->
+    <string name="filters_title">Filtri e ordinamento</string>
+    <string name="reset">Azzera</string>
+    <string name="filter_type">Tipo</string>
+    <string name="type_pdf">PDF</string>
+    <string name="type_word">Word</string>
+    <string name="type_image">Immagini</string>
+    <string name="type_other">Altro</string>
+    <string name="filter_added">Data di aggiunta</string>
+    <string name="date_from">Dal</string>
+    <string name="date_to">Al</string>
+    <string name="date_any">Qualsiasi</string>
+    <string name="date_today">Oggi</string>
+    <string name="sort_by">Ordina per</string>
+    <string name="sort_newest">Più recenti</string>
+    <string name="sort_recently_added">Aggiunti di recente</string>
+    <string name="sort_oldest">Meno recenti</string>
+    <string name="sort_title">Titolo A–Z</string>
+    <string name="sort_expiry">In scadenza prima</string>
+    <plurals name="show_results">
+        <item quantity="one">Mostra %d documento</item>
+        <item quantity="many">Mostra %d documenti</item>
+        <item quantity="other">Mostra %d documenti</item>
+    </plurals>
+
+    <!-- Document details -->
+    <string name="document_details">Dettagli documento</string>
+    <string name="back">Indietro</string>
+    <string name="save">Salva</string>
+    <string name="delete">Elimina</string>
+    <string name="open">Apri</string>
+    <string name="share">Condividi</string>
+    <string name="title">Titolo</string>
+    <string name="title_required">Il titolo non può essere vuoto</string>
+    <string name="category">Categoria</string>
+    <string name="no_category">Nessuna categoria</string>
+    <string name="note">Nota</string>
+    <string name="expiry_date">Data di scadenza</string>
+    <string name="no_expiry">Nessuna</string>
+    <string name="remove">Rimuovi</string>
+    <string name="added_on">Aggiunto il %s</string>
+    <string name="no_app_to_open">Nessuna app su questo telefono può aprire questo file</string>
+    <string name="delete_document_title">Eliminare “%s”?</string>
+    <string name="delete_document_body">Il file verrà rimosso da Papyrus. L\'operazione non si può annullare.</string>
+
+    <!-- Categories -->
+    <string name="categories">Categorie</string>
+    <string name="categories_hint">Usa le categorie per trovare i documenti più in fretta.</string>
+    <plurals name="category_document_count">
+        <item quantity="one">%d documento</item>
+        <item quantity="many">%d documenti</item>
+        <item quantity="other">%d documenti</item>
+    </plurals>
+    <string name="add_category_button">Aggiungi categoria</string>
+    <string name="add_category">Nuova categoria</string>
+    <string name="edit_category">Modifica categoria</string>
+    <string name="category_icon">Icona</string>
+    <string name="icon_identity">Identità</string>
+    <string name="icon_health">Salute</string>
+    <string name="icon_medical">Medico</string>
+    <string name="icon_car">Auto</string>
+    <string name="icon_home">Casa</string>
+    <string name="icon_finance">Finanze</string>
+    <string name="icon_savings">Risparmi</string>
+    <string name="icon_receipts">Ricevute</string>
+    <string name="icon_insurance">Assicurazione</string>
+    <string name="icon_work">Lavoro</string>
+    <string name="icon_school">Scuola</string>
+    <string name="icon_travel">Viaggi</string>
+    <string name="icon_family">Famiglia</string>
+    <string name="icon_pets">Animali</string>
+    <string name="icon_shopping">Acquisti</string>
+    <string name="icon_folder">Cartella</string>
+    <string name="icon_prescriptions">Ricette e farmaci</string>
+    <string name="icon_dental">Dentista</string>
+    <string name="icon_motorbike">Moto</string>
+    <string name="icon_apartment">Appartamento</string>
+    <string name="icon_keys">Chiavi</string>
+    <string name="icon_utilities">Bollette</string>
+    <string name="icon_phone">Telefono</string>
+    <string name="icon_electronics">Elettronica</string>
+    <string name="icon_bank">Banca e tasse</string>
+    <string name="icon_contracts">Contratti</string>
+    <string name="icon_legal">Legale</string>
+    <string name="icon_certificates">Certificati</string>
+    <string name="icon_tickets">Biglietti</string>
+    <string name="icon_baby">Bambini</string>
+    <string name="icon_fitness">Sport</string>
+    <string name="icon_gifts">Regali</string>
+    <string name="category_name_hint">Scegli un nome facile da riconoscere.</string>
+    <string name="add">Aggiungi</string>
+    <string name="rename">Rinomina</string>
+    <string name="name">Nome</string>
+    <string name="category_exists">Esiste già una categoria con questo nome</string>
+    <string name="delete_category_title">Eliminare “%s”?</string>
+    <string name="delete_category_body">I suoi documenti verranno mantenuti, senza categoria.</string>
+
+    <!-- Backup -->
+    <string name="backup_export">Esporta backup</string>
+    <string name="backup_restore">Ripristina backup</string>
+    <string name="backup_restore_from">Ripristina da un backup</string>
+    <plurals name="backup_saved">
+        <item quantity="one">Backup salvato con %d documento</item>
+        <item quantity="many">Backup salvato con %d documenti</item>
+        <item quantity="other">Backup salvato con %d documenti</item>
+    </plurals>
+    <string name="backup_failed">Impossibile salvare il backup</string>
+    <plurals name="restore_done">
+        <item quantity="one">%d documento ripristinato</item>
+        <item quantity="many">%d documenti ripristinati</item>
+        <item quantity="other">%d documenti ripristinati</item>
+    </plurals>
+    <plurals name="restore_skipped">
+        <item quantity="one">%d già presente</item>
+        <item quantity="many">%d già presenti</item>
+        <item quantity="other">%d già presenti</item>
+    </plurals>
+    <string name="restore_not_a_backup">Questo file non è un backup di Papyrus, oppure è danneggiato. Non è stato modificato nulla.</string>
+    <string name="restore_failed">Impossibile ripristinare il backup. Non è stato modificato nulla.</string>
+
+    <!-- Navigation -->
+    <string name="nav_library">Libreria</string>
+    <string name="nav_expiring">In scadenza</string>
+    <string name="nav_categories">Categorie</string>
+    <string name="nav_backup">Backup</string>
+
+    <!-- Expiring -->
+    <plurals name="attention_title">
+        <item quantity="one">%d richiede la tua attenzione</item>
+        <item quantity="many">%d richiedono la tua attenzione</item>
+        <item quantity="other">%d richiedono la tua attenzione</item>
+    </plurals>
+    <string name="attention_body">Controlla i documenti scaduti e in scadenza</string>
+    <string name="all_clear_title">Nulla richiede la tua attenzione</string>
+    <string name="all_clear_body">Nessun documento scaduto o in scadenza nei prossimi 30 giorni.</string>
+    <string name="section_expired">Scaduti</string>
+    <string name="section_soon">Prossimi 30 giorni</string>
+    <string name="section_later">Più avanti</string>
+    <string name="expiring_empty_title">Ancora nessuna scadenza</string>
+    <string name="expiring_empty_body">Aggiungi una data di scadenza nei dettagli di un documento e lo vedrai qui.</string>
+    <string name="expiring_info_title">Informazioni su questo elenco</string>
+    <string name="expiring_info_body">I documenti con una data di scadenza, dal più vicino. Quelli scaduti o in scadenza entro 30 giorni richiedono la tua attenzione e sono contati sulla scheda.</string>
+
+    <!-- Backup screen -->
+    <string name="backup_hero_title">Tieni una copia, non si sa mai</string>
+    <string name="backup_hero_body">Il backup è un unico file, salvato dove preferisci. Non è cifrato, quindi conservalo in un posto sicuro.</string>
+    <string name="last_backup">Ultimo backup</string>
+    <string name="never">Mai</string>
+    <string name="backup_due">Backup consigliato</string>
+    <string name="backup_up_to_date">Aggiornato</string>
+    <string name="backup_reminder_old">Sono passati più di 30 giorni. Fai un nuovo backup per proteggere i documenti recenti.</string>
+    <string name="backup_reminder_never">Non hai ancora fatto un backup. Se perdi questo telefono, perdi anche i tuoi documenti.</string>
+    <string name="backup_export_body">Salva una copia di tutti i tuoi documenti</string>
+    <string name="backup_restore_body">Recupera i documenti da un file di backup</string>
+    <string name="about_papyrus">Informazioni su Papyrus</string>
+    <string name="about_version">Versione</string>
+    <string name="about_license">Licenza open source</string>
+    <string name="about_license_value">GNU GPL v3</string>
+    <string name="about_source">Codice sorgente</string>
+    <string name="about_source_body">Visita il repository del progetto</string>
+
+    <!-- Created on first launch; users can rename or delete them. -->
+    <string-array name="default_categories">
+        <item>Identità</item>
+        <item>Salute</item>
+        <item>Casa</item>
+        <item>Auto</item>
+        <item>Lavoro</item>
+        <item>Finanze</item>
+    </string-array>
+</resources>

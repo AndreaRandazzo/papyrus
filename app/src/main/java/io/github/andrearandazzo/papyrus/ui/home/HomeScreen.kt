@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -123,6 +124,8 @@ fun HomeScreen(
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Document?>(null) }
     val context = LocalContext.current
+    // Follows language changes, unlike context.resources.
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val noAppMessage = stringResource(R.string.no_app_to_open)
 
@@ -148,7 +151,7 @@ fun HomeScreen(
 
     LaunchedEffect(viewModel) {
         viewModel.importResults.collect { result ->
-            snackbarHostState.showSnackbar(result.text(context.resources))
+            snackbarHostState.showSnackbar(result.text(resources))
         }
     }
 

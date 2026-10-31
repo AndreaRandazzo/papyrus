@@ -35,6 +35,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Lists the translated languages (res/values-*) so Android 13+ offers them in
+    // Settings → Apps → Papyrus → Language. New translations are picked up automatically.
+    androidResources {
+        generateLocaleConfig = true
+    }
 }
 
 // Room writes the database schema here so future versions can be migrated safely.

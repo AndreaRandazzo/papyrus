@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -66,6 +67,8 @@ private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compres
 @Composable
 fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewModel.Factory)) {
     val context = LocalContext.current
+    // Follows language changes, unlike context.resources.
+    val resources = LocalResources.current
     val hasDocuments by viewModel.hasDocuments.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -78,7 +81,7 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.messages.collect { snackbarHostState.showSnackbar(it.text(context.resources)) }
+        viewModel.messages.collect { snackbarHostState.showSnackbar(it.text(resources)) }
     }
 
     Scaffold(
