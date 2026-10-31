@@ -1,0 +1,1 @@
+First release: documents, categories with icons, expiry dates and the Expiring tab, search and filters, previews, backup and restore. English and Italian.

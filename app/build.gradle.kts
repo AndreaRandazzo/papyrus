@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -14,16 +16,37 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
+    }
+
+    // The release key lives outside the project (never in git). Without it the release build is
+    // unsigned, which is what F-Droid expects: it builds from source and signs with its own key.
+    val keystoreProperties = File(System.getProperty("user.home"), ".papyrus/keystore.properties")
+    signingConfigs {
+        if (keystoreProperties.exists()) {
+            create("release") {
+                val props = Properties().apply { keystoreProperties.inputStream().use(::load) }
+                storeFile = File(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            // Lets a test build sit next to the real app on the same phone.
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -40,6 +63,9 @@ android {
     // Settings → Apps → Papyrus → Language. New translations are picked up automatically.
     androidResources {
         generateLocaleConfig = true
+        // Ship only the languages Papyrus is translated into, so library texts (e.g. the date
+        // picker) never appear in a third language. Add new translations here too.
+        localeFilters += listOf("en", "it")
     }
 }
 

@@ -1,0 +1,1 @@
+Prima versione: documenti, categorie con icone, date di scadenza e scheda In scadenza, ricerca e filtri, anteprime, backup e ripristino. Italiano e inglese.

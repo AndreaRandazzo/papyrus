@@ -1,23 +1,76 @@
-# Papyrus
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/icon.png" width="96" alt="Papyrus icon">
+</p>
 
-A simple, private document manager for Android. Keep your PDFs, Word files and photos
-organized by category and find them fast with search and filters.
+<h1 align="center">Papyrus</h1>
 
-- **100% local**: your documents never leave your phone. No account, no internet access.
-- **Free and open source**: licensed under GPL-3.0.
+<p align="center">Your personal documents, organized and private. Fully offline.</p>
 
-> Status: early development.
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_library.png" width="200" alt="Library">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_expiring.png" width="200" alt="Expiring documents">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_details.png" width="200" alt="Document details">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_dark_grid.png" width="200" alt="Dark theme, grid view">
+</p>
 
-## Build
+Papyrus is a free, open-source Android app that keeps your important documents in one tidy
+place: ID cards, passports, insurance policies, medical tests, contracts, receipts and warranties.
 
-Requirements: Android Studio (or JDK 17+ and the Android SDK).
+## Private by design
+
+- **Everything stays on your phone.** No account, no cloud, no ads, no tracking.
+- **No permissions.** Papyrus can't access the internet or your storage. It only sees the files
+  you pick in the system file picker, and it hands a single file to another app only when you
+  tap Open or Share.
+
+## Features
+
+- Add PDFs, Word files and photos (they're copied into the app, so they survive if the original is deleted)
+- Categories with 32 icons to choose from
+- Notes and expiry dates; the **Expiring** tab shows what has expired or expires within 30 days
+- Search titles, notes and categories (case and accents ignored), filter by type and date added, sort by date, title or expiry
+- Previews of PDF pages and photos; list or grid view
+- Open and share documents with other apps
+- Backup and restore the whole library as one ZIP file
+- Light and dark theme; English and Italian
+
+### About backups
+
+A backup is a normal ZIP file (`manifest.json` plus your files) saved wherever you choose. You can
+open it on a computer without Papyrus. **It isn't encrypted**, so keep it somewhere safe.
+
+## Install
+
+- **F-Droid:** coming soon.
+- **GitHub:** download the APK from [Releases](https://github.com/AndreaRandazzo/papyrus/releases).
+
+The F-Droid and GitHub versions are signed with different keys, so switching between them
+requires uninstalling first. Make a backup before you do.
+
+## Build from source
+
+Requirements: Android Studio, or JDK 17+ and the Android SDK.
 
 ```sh
-./gradlew assembleDebug
+./gradlew assembleDebug       # debug build: app/build/outputs/apk/debug/
+./gradlew testDebugUnitTest   # unit tests
+./gradlew assembleRelease     # release build (unsigned unless ~/.papyrus/keystore.properties exists)
 ```
 
-The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+Built with Kotlin, Jetpack Compose (Material 3) and Room.
+
+## Translations
+
+Texts live in `app/src/main/res/values/strings.xml` (English) and `values-it/` (Italian).
+To add a language, copy `strings.xml` into `values-xx/`, translate it, and add the language code
+to `localeFilters` in `app/build.gradle.kts`. Contributions are welcome.
 
 ## License
 
-[GPL-3.0](LICENSE)
+Papyrus is licensed under the [GNU General Public License v3.0](LICENSE).
+
+Third-party assets:
+- [Phosphor Icons](https://phosphoricons.com), MIT License ([licenses/Phosphor-MIT.txt](licenses/Phosphor-MIT.txt))
+- [Nunito Sans](https://github.com/Fonthausen/NunitoSans), SIL Open Font License 1.1 ([licenses/NunitoSans-OFL.txt](licenses/NunitoSans-OFL.txt))
+
+The documents in the screenshots are fictional samples.
