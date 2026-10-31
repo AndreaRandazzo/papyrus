@@ -1,5 +1,20 @@
 <resources>
     <string name="app_name">Papyrus</string>
     <string name="empty_title">No documents yet</string>
-    <string name="empty_body">Your documents stay on this phone. Nothing is uploaded anywhere.</string>
+    <string name="empty_body">Tap + to add PDFs, Word files or photos. Your documents stay on this phone. Nothing is uploaded anywhere.</string>
+    <string name="import_documents">Add documents</string>
+
+    <string name="kind_pdf">PDF</string>
+    <string name="kind_word">DOC</string>
+    <string name="kind_image">IMG</string>
+    <string name="kind_other">FILE</string>
+
+    <plurals name="import_done">
+        <item quantity="one">%d document added</item>
+        <item quantity="other">%d documents added</item>
+    </plurals>
+    <plurals name="import_failed">
+        <item quantity="one">%d file could not be added</item>
+        <item quantity="other">%d files could not be added</item>
+    </plurals>
 </resources>
