@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A folded document sheet, drawn inside the 66dp adaptive-icon safe zone. -->
+<!-- Material Symbols "description" (Apache License 2.0) in sage green, centered in the 66dp safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#7A4E1D"
-        android:pathData="M38,30h22l12,12v34a2,2 0,0 1,-2 2H38a2,2 0,0 1,-2 -2V32a2,2 0,0 1,2 -2z" />
-    <path
-        android:fillColor="#C99A5B"
-        android:pathData="M60,30l12,12H62a2,2 0,0 1,-2 -2z" />
-    <path
-        android:fillColor="#F3E3C3"
-        android:pathData="M43,50h22v3H43zM43,58h22v3H43zM43,66h15v3H43z" />
+    <group
+        android:scaleX="0.05"
+        android:scaleY="0.05"
+        android:translateX="30"
+        android:translateY="78">
+        <path
+            android:fillColor="#FF526351"
+            android:pathData="M320-240h320v-80H320v80Zm0-160h320v-80H320v80ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v480q0 33-23.5 56.5T720-80H240Zm280-520v-200H240v640h480v-440H520ZM240-800v200-200 640-640Z" />
+    </group>
 </vector>

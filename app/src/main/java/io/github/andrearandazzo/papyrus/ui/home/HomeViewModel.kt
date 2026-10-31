@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
+import java.io.File
 
 /** One-off results, each shown once as a snackbar. */
 sealed interface HomeMessage {
@@ -103,6 +104,13 @@ class HomeViewModel(
 
     fun updateFilter(change: (DocumentFilter) -> DocumentFilter) {
         filter.update(change)
+    }
+
+    /** A copy with a readable file name, to open in or share with another app. */
+    suspend fun fileForOtherApps(document: Document): File = documentRepository.exportCopy(document)
+
+    fun delete(document: Document) {
+        viewModelScope.launch { documentRepository.delete(document) }
     }
 
     /** Clears search and every filter, but keeps the sort order. */

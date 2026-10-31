@@ -1,71 +1,74 @@
 package io.github.andrearandazzo.papyrus.ui.home
 
+import android.content.res.Resources
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import android.content.res.Resources
-import java.time.LocalDate
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.input.ImeAction
-import io.github.andrearandazzo.papyrus.data.DocumentFilter
-import io.github.andrearandazzo.papyrus.ui.DocumentThumbnail
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -75,10 +78,20 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.andrearandazzo.papyrus.R
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
+import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentKind
-import io.github.andrearandazzo.papyrus.ui.formatDay
+import io.github.andrearandazzo.papyrus.data.SortOrder
+import io.github.andrearandazzo.papyrus.ui.DocumentIntents
+import io.github.andrearandazzo.papyrus.ui.DocumentTile
+import io.github.andrearandazzo.papyrus.ui.components.PaperIllustration
+import io.github.andrearandazzo.papyrus.ui.components.PrivacyNote
+import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
+import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
+import io.github.andrearandazzo.papyrus.ui.daysUntil
+import io.github.andrearandazzo.papyrus.ui.expiryText
 import io.github.andrearandazzo.papyrus.ui.formatInstantDate
-import io.github.andrearandazzo.papyrus.ui.isPast
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 /** File types offered in the system file picker. */
 private val IMPORTABLE_TYPES = arrayOf(
@@ -86,6 +99,17 @@ private val IMPORTABLE_TYPES = arrayOf(
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "image/*",
+)
+
+/** Some file providers label ZIP files differently, so accept all the common types. */
+private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
+
+/** What a document's "⋮" menu can do. */
+private class DocumentActions(
+    val open: (Document) -> Unit,
+    val share: (Document) -> Unit,
+    val edit: (Document) -> Unit,
+    val delete: (Document) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,8 +123,11 @@ fun HomeScreen(
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilters by rememberSaveable { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
-    val resources = LocalContext.current.resources
+    var gridView by rememberSaveable { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<Document?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val noAppMessage = stringResource(R.string.no_app_to_open)
 
     // The system pickers need no storage permission: the user chooses exactly what we can read or write.
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -112,44 +139,47 @@ fun HomeScreen(
     val backupSource = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(viewModel::restoreBackup)
     }
+    val addDocuments = { picker.launch(IMPORTABLE_TYPES) }
     val restoreBackup = { backupSource.launch(BACKUP_TYPES) }
+
+    val actions = DocumentActions(
+        open = { document ->
+            scope.launch {
+                val file = viewModel.fileForOtherApps(document)
+                if (!DocumentIntents.open(context, file, document.mimeType)) snackbarHostState.showSnackbar(noAppMessage)
+            }
+        },
+        share = { document ->
+            scope.launch { DocumentIntents.share(context, viewModel.fileForOtherApps(document), document.mimeType) }
+        },
+        edit = { onOpenDocument(it.id) },
+        delete = { pendingDelete = it },
+    )
 
     LaunchedEffect(viewModel) {
         viewModel.messages.collect { message ->
-            snackbarHostState.showSnackbar(message.text(resources))
+            snackbarHostState.showSnackbar(message.text(context.resources))
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                actions = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.more_options))
-                    }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.categories)) },
-                            onClick = { showMenu = false; onManageCategories() },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.backup_export)) },
-                            enabled = !state.libraryEmpty && !busy,
-                            onClick = { showMenu = false; backupTarget.launch(backupFileName()) },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.backup_restore)) },
-                            enabled = !busy,
-                            onClick = { showMenu = false; restoreBackup() },
-                        )
-                    }
-                },
+            HomeTopBar(
+                showViewToggle = !state.libraryEmpty,
+                gridView = gridView,
+                onToggleView = { gridView = !gridView },
+                canExport = !state.libraryEmpty && !busy,
+                busy = busy,
+                onCategories = onManageCategories,
+                onExport = { backupTarget.launch("papyrus-backup-${LocalDate.now()}.zip") },
+                onRestore = restoreBackup,
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { picker.launch(IMPORTABLE_TYPES) }) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.import_documents))
+            if (!state.libraryEmpty) {
+                FloatingActionButton(onClick = addDocuments, shape = MaterialTheme.shapes.medium) {
+                    SymbolIcon(R.drawable.ic_add, contentDescription = stringResource(R.string.import_documents))
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -157,42 +187,47 @@ fun HomeScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (state.libraryEmpty) {
-                EmptyState(
-                    stringResource(R.string.empty_title),
-                    stringResource(R.string.empty_body),
-                    // New phone? Offer to bring the old library back.
-                    action = {
-                        TextButton(onClick = restoreBackup, enabled = !busy) {
-                            Text(stringResource(R.string.backup_restore_from))
-                        }
-                    },
-                )
-            } else {
-                SearchField(viewModel.query, viewModel::search)
-                FilterRow(
-                    categories = state.categories,
-                    filter = state.filter,
-                    onSelectCategory = viewModel::selectCategory,
-                    onOpenFilters = { showFilters = true },
-                )
-                when {
-                    state.documents.isNotEmpty() -> DocumentList(state.documents, state.categories, onOpenDocument)
-                    // Only a category is selected: suggest adding documents to it.
-                    state.filter.categoryId != null && state.filter.copy(categoryId = null).isFiltering.not() ->
-                        EmptyState(
-                            stringResource(R.string.empty_category_title),
-                            stringResource(R.string.empty_category_body),
-                        )
-                    else -> EmptyState(
-                        stringResource(R.string.no_results_title),
-                        stringResource(R.string.no_results_body),
-                        action = {
-                            TextButton(onClick = viewModel::clearFilters) {
-                                Text(stringResource(R.string.clear_filters))
-                            }
-                        },
+                FirstLaunch(onAdd = addDocuments, onRestore = restoreBackup, busy = busy)
+                return@Column
+            }
+            SearchField(viewModel.query, viewModel::search)
+            FilterRow(
+                categories = state.categories,
+                filter = state.filter,
+                onSelectCategory = viewModel::selectCategory,
+                onOpenFilters = { showFilters = true },
+            )
+            when {
+                state.documents.isNotEmpty() -> {
+                    ResultsHeader(
+                        count = state.documents.size,
+                        sort = state.filter.sort,
+                        onSort = { order -> viewModel.updateFilter { it.copy(sort = order) } },
                     )
+                    val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
+                    if (gridView) {
+                        DocumentGrid(state.documents, categoryNames, actions)
+                    } else {
+                        DocumentList(state.documents, categoryNames, actions)
+                    }
                 }
+                // Only a category is selected: suggest adding documents to it.
+                state.filter.categoryId != null && !state.filter.copy(categoryId = null).isFiltering -> EmptyState(
+                    illustration = R.drawable.ic_folder,
+                    title = stringResource(R.string.empty_category_title),
+                    body = stringResource(R.string.empty_category_body),
+                    actionIcon = R.drawable.ic_add,
+                    actionLabel = stringResource(R.string.import_documents),
+                    onAction = addDocuments,
+                )
+                else -> EmptyState(
+                    illustration = R.drawable.ic_search,
+                    title = stringResource(R.string.no_results_title),
+                    body = stringResource(R.string.no_results_body),
+                    actionIcon = R.drawable.ic_filter_alt_off,
+                    actionLabel = stringResource(R.string.clear_filters),
+                    onAction = viewModel::clearFilters,
+                )
             }
         }
     }
@@ -200,16 +235,438 @@ fun HomeScreen(
     if (showFilters) {
         FiltersSheet(
             filter = state.filter,
+            resultCount = state.documents.size,
             onChange = viewModel::updateFilter,
             onDismiss = { showFilters = false },
         )
     }
+
+    pendingDelete?.let { document ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            icon = { SymbolIcon(R.drawable.ic_delete, contentDescription = null) },
+            title = { Text(stringResource(R.string.delete_document_title, document.title)) },
+            text = { Text(stringResource(R.string.delete_document_body)) },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.delete(document)
+                    pendingDelete = null
+                }) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text(stringResource(android.R.string.cancel)) }
+            },
+        )
+    }
 }
 
-/** Some file providers label ZIP files differently, so accept all the common types. */
-private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeTopBar(
+    showViewToggle: Boolean,
+    gridView: Boolean,
+    onToggleView: () -> Unit,
+    canExport: Boolean,
+    busy: Boolean,
+    onCategories: () -> Unit,
+    onExport: () -> Unit,
+    onRestore: () -> Unit,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    TopAppBar(
+        title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
+        navigationIcon = {
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    SymbolIcon(R.drawable.ic_menu, contentDescription = stringResource(R.string.open_menu))
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    shape = MaterialTheme.shapes.medium,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ) {
+                    MenuItem(R.drawable.ic_folder, stringResource(R.string.categories)) {
+                        showMenu = false; onCategories()
+                    }
+                    MenuItem(R.drawable.ic_upload, stringResource(R.string.backup_export), enabled = canExport) {
+                        showMenu = false; onExport()
+                    }
+                    MenuItem(R.drawable.ic_history, stringResource(R.string.backup_restore), enabled = !busy) {
+                        showMenu = false; onRestore()
+                    }
+                    HorizontalDivider(Modifier.padding(vertical = 4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        SymbolIcon(R.drawable.ic_lock, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            stringResource(R.string.menu_private),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        },
+        actions = {
+            if (showViewToggle) {
+                IconButton(onClick = onToggleView) {
+                    if (gridView) {
+                        SymbolIcon(R.drawable.ic_view_agenda, contentDescription = stringResource(R.string.list_view))
+                    } else {
+                        SymbolIcon(R.drawable.ic_grid_view, contentDescription = stringResource(R.string.grid_view))
+                    }
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+    )
+}
 
-private fun backupFileName() = "papyrus-backup-${LocalDate.now()}.zip"
+@Composable
+private fun MenuItem(icon: Int, text: String, enabled: Boolean = true, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(text, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)) },
+        leadingIcon = { SymbolIcon(icon, contentDescription = null) },
+        enabled = enabled,
+        onClick = onClick,
+        modifier = Modifier.width(240.dp),
+    )
+}
+
+@Composable
+private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
+    val focusManager = LocalFocusManager.current
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text(stringResource(R.string.search_hint)) },
+        leadingIcon = { SymbolIcon(R.drawable.ic_search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    SymbolIcon(R.drawable.ic_close, contentDescription = stringResource(R.string.clear_search))
+                }
+            }
+        },
+        singleLine = true,
+        shape = CircleShape,
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        // Results update while typing, so the search key just closes the keyboard.
+        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
+/** "Filters" chip with a count of active filters, then "All" and one chip per category. */
+@Composable
+private fun FilterRow(
+    categories: List<Category>,
+    filter: DocumentFilter,
+    onSelectCategory: (Category?) -> Unit,
+    onOpenFilters: () -> Unit,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            val count = filter.panelFilterCount
+            FilterChip(
+                selected = count > 0,
+                onClick = onOpenFilters,
+                leadingIcon = { SymbolIcon(R.drawable.ic_tune, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                label = {
+                    Text(stringResource(R.string.filters))
+                    if (count > 0) {
+                        Spacer(Modifier.width(6.dp))
+                        Box(
+                            Modifier.size(18.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                count.toString(),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.height(40.dp),
+            )
+        }
+        item {
+            CategoryChip(stringResource(R.string.filter_all), filter.categoryId == null) { onSelectCategory(null) }
+        }
+        items(categories, key = { it.id }) { category ->
+            CategoryChip(category.name, category.id == filter.categoryId) { onSelectCategory(category) }
+        }
+    }
+}
+
+@Composable
+private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        modifier = Modifier.height(40.dp),
+    )
+}
+
+/** "6 DOCUMENTS" on the left, the sort order as a small menu on the right. */
+@Composable
+private fun ResultsHeader(count: Int, sort: SortOrder, onSort: (SortOrder) -> Unit) {
+    var showSort by remember { mutableStateOf(false) }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+    ) {
+        SectionLabel(pluralStringResource(R.plurals.document_count, count, count), Modifier.weight(1f))
+        Box {
+            TextButton(onClick = { showSort = true }) {
+                Text(stringResource(sort.headerLabel()))
+                SymbolIcon(R.drawable.ic_arrow_drop_down, contentDescription = null)
+            }
+            DropdownMenu(
+                expanded = showSort,
+                onDismissRequest = { showSort = false },
+                shape = MaterialTheme.shapes.medium,
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ) {
+                SortOrder.entries.forEach { order ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(order.headerLabel())) },
+                        trailingIcon = {
+                            if (order == sort) SymbolIcon(R.drawable.ic_check, contentDescription = null)
+                        },
+                        onClick = { showSort = false; onSort(order) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DocumentList(documents: List<Document>, categoryNames: Map<Long, String>, actions: DocumentActions) {
+    // Bottom padding keeps the last row clear of the "+" button.
+    LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
+        items(documents, key = { it.id }) { document ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { actions.edit(document) }
+                    .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+            ) {
+                DocumentTile(document, Modifier.size(width = 64.dp, height = 76.dp))
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    DocumentText(document, categoryNames[document.categoryId])
+                }
+                DocumentMenu(document, actions)
+            }
+            HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        }
+    }
+}
+
+@Composable
+private fun DocumentGrid(documents: List<Document>, categoryNames: Map<Long, String>, actions: DocumentActions) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 150.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        items(documents, key = { it.id }) { document ->
+            Column(
+                Modifier
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable { actions.edit(document) },
+            ) {
+                DocumentTile(document, Modifier.fillMaxWidth().aspectRatio(0.8f), previewWidth = 200.dp)
+                // Inset so text near the bottom corners isn't clipped by the card's rounded shape.
+                Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)) {
+                    Column(Modifier.weight(1f).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        DocumentText(document, categoryNames[document.categoryId], compact = true)
+                    }
+                    DocumentMenu(document, actions)
+                }
+            }
+        }
+    }
+}
+
+/** Title, "Identity · PDF · 2.4 MB · 8 Mar 2024", and the expiry if set. */
+@Composable
+private fun DocumentText(document: Document, categoryName: String?, compact: Boolean = false) {
+    val context = LocalContext.current
+    Text(
+        document.title,
+        style = MaterialTheme.typography.titleMedium,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+    val details = if (compact) {
+        listOfNotNull(categoryName, stringResource(document.kind.label()))
+    } else {
+        listOfNotNull(
+            categoryName,
+            stringResource(document.kind.label()),
+            Formatter.formatShortFileSize(context, document.sizeBytes),
+            formatInstantDate(document.importedAt),
+        )
+    }
+    Text(
+        details.joinToString(" · "),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+    document.expiresAt?.let { expiry ->
+        val expired = daysUntil(expiry) < 0
+        val color = if (expired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+            Icon(
+                painterResource(if (expired) R.drawable.ic_error else R.drawable.ic_calendar_today),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                expiryText(expiry),
+                style = MaterialTheme.typography.labelLarge,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DocumentMenu(document: Document, actions: DocumentActions) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            SymbolIcon(R.drawable.ic_more_vert, contentDescription = stringResource(R.string.document_actions))
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            shape = MaterialTheme.shapes.medium,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
+            MenuItem(R.drawable.ic_open_in_new, stringResource(R.string.open)) { expanded = false; actions.open(document) }
+            MenuItem(R.drawable.ic_share, stringResource(R.string.share)) { expanded = false; actions.share(document) }
+            MenuItem(R.drawable.ic_edit, stringResource(R.string.edit_details)) { expanded = false; actions.edit(document) }
+            MenuItem(R.drawable.ic_delete, stringResource(R.string.delete)) { expanded = false; actions.delete(document) }
+        }
+    }
+}
+
+@Composable
+private fun FirstLaunch(onAdd: () -> Unit, onRestore: () -> Unit, busy: Boolean) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.weight(1f))
+        PaperIllustration(R.drawable.ic_description, backColor = MaterialTheme.colorScheme.primaryContainer)
+        Spacer(Modifier.height(32.dp))
+        Text(
+            stringResource(R.string.empty_title),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.empty_body),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(28.dp))
+        Button(onClick = onAdd, enabled = !busy, modifier = Modifier.height(52.dp)) {
+            SymbolIcon(R.drawable.ic_add, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.add_first_document))
+        }
+        Spacer(Modifier.height(8.dp))
+        TextButton(onClick = onRestore, enabled = !busy) {
+            SymbolIcon(R.drawable.ic_history, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.backup_restore_from))
+        }
+        Spacer(Modifier.weight(1.4f))
+        PrivacyNote(stringResource(R.string.privacy_note))
+    }
+}
+
+@Composable
+private fun EmptyState(
+    illustration: Int,
+    title: String,
+    body: String,
+    actionIcon: Int,
+    actionLabel: String,
+    onAction: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(48.dp))
+        PaperIllustration(illustration, backColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+        Spacer(Modifier.height(28.dp))
+        Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            body,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        FilledTonalButton(onClick = onAction, modifier = Modifier.height(48.dp)) {
+            SymbolIcon(actionIcon, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(actionLabel)
+        }
+    }
+}
+
+fun DocumentKind.label() = when (this) {
+    DocumentKind.PDF -> R.string.kind_pdf
+    DocumentKind.WORD -> R.string.kind_word
+    DocumentKind.IMAGE -> R.string.kind_image
+    DocumentKind.OTHER -> R.string.kind_other
+}
+
+private fun SortOrder.headerLabel() = when (this) {
+    SortOrder.NEWEST -> R.string.sort_recently_added
+    SortOrder.OLDEST -> R.string.sort_oldest
+    SortOrder.TITLE -> R.string.sort_title
+    SortOrder.EXPIRY -> R.string.sort_expiry
+}
 
 private fun HomeMessage.text(resources: Resources): String = when (this) {
     is HomeMessage.Imported ->
@@ -226,167 +683,4 @@ private fun HomeMessage.text(resources: Resources): String = when (this) {
     }
     HomeMessage.NotABackup -> resources.getString(R.string.restore_not_a_backup)
     HomeMessage.RestoreFailed -> resources.getString(R.string.restore_failed)
-}
-
-@Composable
-private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
-    val focusManager = LocalFocusManager.current
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = { Text(stringResource(R.string.search_hint)) },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.clear_search))
-                }
-            }
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(28.dp),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        // Results update while typing, so the search key just closes the keyboard.
-        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-    )
-}
-
-/** "Filters" chip, then "All" and one chip per category. */
-@Composable
-private fun FilterRow(
-    categories: List<Category>,
-    filter: DocumentFilter,
-    onSelectCategory: (Category?) -> Unit,
-    onOpenFilters: () -> Unit,
-) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            val count = filter.panelFilterCount
-            FilterChip(
-                selected = count > 0,
-                onClick = onOpenFilters,
-                label = {
-                    Text(
-                        if (count > 0) stringResource(R.string.filters_count, count)
-                        else stringResource(R.string.filters),
-                    )
-                },
-                trailingIcon = { Icon(Icons.Filled.ArrowDropDown, contentDescription = null) },
-            )
-        }
-        item {
-            FilterChip(
-                selected = filter.categoryId == null,
-                onClick = { onSelectCategory(null) },
-                label = { Text(stringResource(R.string.filter_all)) },
-            )
-        }
-        items(categories, key = { it.id }) { category ->
-            FilterChip(
-                selected = category.id == filter.categoryId,
-                onClick = { onSelectCategory(category) },
-                label = { Text(category.name) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(title: String, body: String, action: @Composable () -> Unit = {}) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-        Text(body, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-        action()
-    }
-}
-
-@Composable
-private fun DocumentList(
-    documents: List<Document>,
-    categories: List<Category>,
-    onOpenDocument: (Long) -> Unit,
-) {
-    val categoryNames = remember(categories) { categories.associate { it.id to it.name } }
-    // Bottom padding keeps the last row clear of the "+" button.
-    LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
-        items(documents, key = { it.id }) { document ->
-            DocumentRow(document, categoryNames[document.categoryId], onClick = { onOpenDocument(document.id) })
-            HorizontalDivider()
-        }
-    }
-}
-
-@Composable
-private fun DocumentRow(document: Document, categoryName: String?, onClick: () -> Unit) {
-    val context = LocalContext.current
-    val details = listOfNotNull(
-        categoryName,
-        Formatter.formatShortFileSize(context, document.sizeBytes),
-        formatInstantDate(document.importedAt),
-    ).joinToString(" · ")
-    ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
-        leadingContent = {
-            val shape = RoundedCornerShape(8.dp)
-            Box(
-                Modifier
-                    .size(44.dp)
-                    .clip(shape)
-                    // Outline so a white page stands out from the background.
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
-            ) {
-                DocumentThumbnail(
-                    document = document,
-                    width = 44.dp,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize(),
-                    placeholder = { KindBadge(document.kind) },
-                )
-            }
-        },
-        headlineContent = { Text(document.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        supportingContent = {
-            Column {
-                Text(details, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                document.expiresAt?.let { expiry ->
-                    val expired = isPast(expiry)
-                    Text(
-                        text = stringResource(
-                            if (expired) R.string.expired_on else R.string.expires_on,
-                            formatDay(expiry),
-                        ),
-                        color = if (expired) MaterialTheme.colorScheme.error else Color.Unspecified,
-                    )
-                }
-            }
-        },
-    )
-}
-
-@Composable
-fun KindBadge(kind: DocumentKind) {
-    val (label, color) = when (kind) {
-        DocumentKind.PDF -> stringResource(R.string.kind_pdf) to Color(0xFFC62828)
-        DocumentKind.WORD -> stringResource(R.string.kind_word) to Color(0xFF1565C0)
-        DocumentKind.IMAGE -> stringResource(R.string.kind_image) to Color(0xFF2E7D32)
-        DocumentKind.OTHER -> stringResource(R.string.kind_other) to Color(0xFF616161)
-    }
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .background(color, RoundedCornerShape(8.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-    }
 }

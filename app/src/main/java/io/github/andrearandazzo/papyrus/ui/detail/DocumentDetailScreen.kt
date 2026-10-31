@@ -1,74 +1,79 @@
 package io.github.andrearandazzo.papyrus.ui.detail
 
 import android.text.format.Formatter
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.andrearandazzo.papyrus.PapyrusApp
 import io.github.andrearandazzo.papyrus.R
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
-import io.github.andrearandazzo.papyrus.ui.formatDay
-import io.github.andrearandazzo.papyrus.ui.formatInstantDate
-import io.github.andrearandazzo.papyrus.ui.home.KindBadge
 import io.github.andrearandazzo.papyrus.ui.DocumentIntents
-import io.github.andrearandazzo.papyrus.ui.DocumentThumbnail
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import io.github.andrearandazzo.papyrus.ui.components.DateField
+import io.github.andrearandazzo.papyrus.ui.components.DocumentPlaceholder
+import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
+import io.github.andrearandazzo.papyrus.ui.formatInstantDate
+import io.github.andrearandazzo.papyrus.ui.home.label
+import io.github.andrearandazzo.papyrus.ui.rememberPreview
+import io.github.andrearandazzo.papyrus.ui.toUtcMillis
+import io.github.andrearandazzo.papyrus.ui.utcDay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,16 +114,18 @@ fun DocumentDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.document_details)) },
+                title = { Text(stringResource(R.string.document_details), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        SymbolIcon(R.drawable.ic_arrow_back, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { confirmDelete = true }, enabled = document != null) {
-                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete))
-                    }
+                    TextButton(
+                        onClick = { confirmDelete = true },
+                        enabled = document != null,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) { Text(stringResource(R.string.delete)) }
                     TextButton(onClick = viewModel::save, enabled = form?.isValid == true) {
                         Text(stringResource(R.string.save))
                     }
@@ -128,25 +135,33 @@ fun DocumentDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (form != null && document != null) {
-            DocumentForm(
-                form = form,
-                document = document,
-                categories = categories,
-                onEdit = viewModel::edit,
-                onOpen = open,
-                onShare = share,
-                modifier = Modifier.padding(padding),
-            )
+            Column(
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                PreviewPager(document, onOpen = open)
+                DocumentForm(
+                    form = form,
+                    document = document,
+                    categories = categories,
+                    onEdit = viewModel::edit,
+                    onOpen = open,
+                    onShare = share,
+                )
+            }
         }
     }
 
     if (confirmDelete && document != null) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
+            icon = { SymbolIcon(R.drawable.ic_delete, contentDescription = null) },
             title = { Text(stringResource(R.string.delete_document_title, document.title)) },
             text = { Text(stringResource(R.string.delete_document_body)) },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     confirmDelete = false
                     viewModel.delete()
                 }) { Text(stringResource(R.string.delete)) }
@@ -158,36 +173,56 @@ fun DocumentDetailScreen(
     }
 }
 
-/** Large preview (tap to open) with Open and Share buttons. */
+/** Full-width preview; swipe through a PDF's pages. Tap to open the document. */
 @Composable
-private fun PreviewSection(document: Document, onOpen: () -> Unit, onShare: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onOpen),
-        ) {
-            DocumentThumbnail(
-                document = document,
-                width = 360.dp,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
-                placeholder = { KindBadge(document.kind) },
-            )
+private fun PreviewPager(document: Document, onOpen: () -> Unit) {
+    val thumbnails = (LocalContext.current.applicationContext as PapyrusApp).thumbnails
+    val pageCount by produceState(1, document.fileName) {
+        value = thumbnails.pageCount(document).coerceAtLeast(1)
+    }
+    val pagerState = rememberPagerState { pageCount }
+
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(290.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onOpen),
+    ) {
+        HorizontalPager(pagerState, modifier = Modifier.fillMaxSize()) { page ->
+            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                val image = rememberPreview(document, width = 360.dp, page = page)
+                val sheet = RoundedCornerShape(6.dp)
+                if (image != null) {
+                    Image(
+                        image,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(image.width.toFloat() / image.height, matchHeightConstraintsFirst = true)
+                            .shadow(6.dp, sheet),
+                    )
+                } else {
+                    DocumentPlaceholder(
+                        document.kind,
+                        large = true,
+                        modifier = Modifier.size(width = 180.dp, height = 230.dp).shadow(6.dp, sheet),
+                    )
+                }
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onOpen, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.open))
-            }
-            OutlinedButton(onClick = onShare, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.share))
-            }
+        if (pageCount > 1) {
+            Text(
+                "${pagerState.currentPage + 1} / $pageCount",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .background(MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.85f), CircleShape)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
         }
     }
 }
@@ -201,18 +236,24 @@ private fun DocumentForm(
     onEdit: ((DocumentForm) -> DocumentForm) -> Unit,
     onOpen: () -> Unit,
     onShare: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    var showDatePicker by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        PreviewSection(document, onOpen, onShare)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FilledTonalButton(onClick = onOpen, modifier = Modifier.weight(1f).height(48.dp)) {
+                SymbolIcon(R.drawable.ic_open_in_new, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.open))
+            }
+            FilledTonalButton(onClick = onShare, modifier = Modifier.weight(1f).height(48.dp)) {
+                SymbolIcon(R.drawable.ic_share, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.share))
+            }
+        }
 
         OutlinedTextField(
             value = form.title,
@@ -221,6 +262,7 @@ private fun DocumentForm(
             isError = !form.isValid,
             supportingText = if (form.isValid) null else ({ Text(stringResource(R.string.title_required)) }),
             singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -235,44 +277,30 @@ private fun DocumentForm(
             value = form.note,
             onValueChange = { note -> onEdit { it.copy(note = note) } },
             label = { Text(stringResource(R.string.note)) },
-            minLines = 3,
+            minLines = 2,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.expiry_date), modifier = Modifier.weight(1f))
-            TextButton(onClick = { showDatePicker = true }) {
-                Text(form.expiresAt?.let(::formatDay) ?: stringResource(R.string.set_date))
-            }
-            if (form.expiresAt != null) {
-                IconButton(onClick = { onEdit { it.copy(expiresAt = null) } }) {
-                    Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.clear_date))
-                }
-            }
-        }
+        DateField(
+            label = stringResource(R.string.expiry_date),
+            date = form.expiresAt?.let(::utcDay),
+            emptyText = stringResource(R.string.no_expiry),
+            onDateChange = { date -> onEdit { it.copy(expiresAt = date?.toUtcMillis()) } },
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-        FileInfo(document)
-    }
-
-    if (showDatePicker) {
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = form.expiresAt)
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    onEdit { it.copy(expiresAt = pickerState.selectedDateMillis) }
-                    showDatePicker = false
-                }) { Text(stringResource(android.R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-        ) {
-            DatePicker(pickerState)
-        }
+        Text(
+            listOf(
+                stringResource(document.kind.label()),
+                Formatter.formatShortFileSize(context, document.sizeBytes),
+                stringResource(R.string.added_on, formatInstantDate(document.importedAt)),
+            ).joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
     }
 }
 
@@ -293,12 +321,18 @@ private fun CategoryDropdown(
             onValueChange = {},
             readOnly = true,
             label = { Text(stringResource(R.string.category)) },
+            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth(),
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            shape = MaterialTheme.shapes.medium,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ) {
             DropdownMenuItem(
                 text = { Text(noCategory) },
                 onClick = { onSelect(null); expanded = false },
@@ -309,24 +343,6 @@ private fun CategoryDropdown(
                     onClick = { onSelect(category.id); expanded = false },
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun FileInfo(document: Document) {
-    val context = LocalContext.current
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        KindBadge(document.kind)
-        Column {
-            Text(
-                Formatter.formatShortFileSize(context, document.sizeBytes),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                stringResource(R.string.added_on, formatInstantDate(document.importedAt)),
-                style = MaterialTheme.typography.bodySmall,
-            )
         }
     }
 }

@@ -14,8 +14,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Previews of a PDF's first page or of a photo, kept in memory while the app runs.
- * Other types (e.g. Word) have no preview and return null.
+ * Previews of PDF pages and photos, kept in memory while the app runs.
+ * Other types (e.g. Word) have no preview.
  */
 class ThumbnailLoader(private val repository: DocumentRepository) {
 
@@ -26,16 +26,30 @@ class ThumbnailLoader(private val repository: DocumentRepository) {
     /** At most two previews are rendered at once, so scrolling a long list stays smooth. */
     private val dispatcher = Dispatchers.IO.limitedParallelism(2)
 
-    /** A preview about [widthPx] wide, or null if there is none or the file can't be read. */
-    suspend fun load(document: Document, widthPx: Int): Bitmap? {
+    /** How many pages can be previewed: all pages of a PDF, 1 for a photo, 0 otherwise. */
+    suspend fun pageCount(document: Document): Int = when (document.kind) {
+        DocumentKind.IMAGE -> 1
+        DocumentKind.PDF -> withContext(dispatcher) {
+            try {
+                openPdf(repository.fileOf(document)) { it.pageCount }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cannot count pages of ${document.fileName}", e)
+                0
+            }
+        }
+        else -> 0
+    }
+
+    /** A preview of [page] about [widthPx] wide, or null if there is none or the file can't be read. */
+    suspend fun load(document: Document, widthPx: Int, page: Int = 0): Bitmap? {
         if (document.kind != DocumentKind.PDF && document.kind != DocumentKind.IMAGE) return null
-        val key = "${document.fileName}@$widthPx"
+        val key = "${document.fileName}#$page@$widthPx"
         cache.get(key)?.let { return it }
         return withContext(dispatcher) {
             cache.get(key) ?: try {
                 val file = repository.fileOf(document)
                 when (document.kind) {
-                    DocumentKind.PDF -> renderPdfFirstPage(file, widthPx)
+                    DocumentKind.PDF -> renderPdfPage(file, page, widthPx)
                     else -> decodeImage(file, widthPx)
                 }
             } catch (e: Exception) {
@@ -46,19 +60,21 @@ class ThumbnailLoader(private val repository: DocumentRepository) {
         }
     }
 
-    private fun renderPdfFirstPage(file: File, widthPx: Int): Bitmap? =
+    private fun <T> openPdf(file: File, block: (PdfRenderer) -> T): T =
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
-            PdfRenderer(descriptor).use { renderer ->
-                if (renderer.pageCount == 0) return@use null
-                renderer.openPage(0).use { page ->
-                    val height = (widthPx.toLong() * page.height / page.width).toInt().coerceIn(1, widthPx * 3)
-                    Bitmap.createBitmap(widthPx, height, Bitmap.Config.ARGB_8888).apply {
-                        eraseColor(Color.WHITE) // PDF pages are transparent by default.
-                        page.render(this, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    }
-                }
+            PdfRenderer(descriptor).use(block)
+        }
+
+    private fun renderPdfPage(file: File, page: Int, widthPx: Int): Bitmap? = openPdf(file) { renderer ->
+        if (page !in 0 until renderer.pageCount) return@openPdf null
+        renderer.openPage(page).use { pdfPage ->
+            val height = (widthPx.toLong() * pdfPage.height / pdfPage.width).toInt().coerceIn(1, widthPx * 3)
+            Bitmap.createBitmap(widthPx, height, Bitmap.Config.ARGB_8888).apply {
+                eraseColor(Color.WHITE) // PDF pages are transparent by default.
+                pdfPage.render(this, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             }
         }
+    }
 
     private fun decodeImage(file: File, widthPx: Int): Bitmap? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
