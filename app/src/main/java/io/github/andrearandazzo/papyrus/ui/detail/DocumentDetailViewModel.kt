@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** The editable fields of a document. */
 data class DocumentForm(
@@ -51,6 +52,8 @@ class DocumentDetailViewModel(
         private set
     var saved by mutableStateOf(false)
         private set
+    var deleted by mutableStateOf(false)
+        private set
 
     init {
         viewModelScope.launch {
@@ -81,6 +84,17 @@ class DocumentDetailViewModel(
                 ),
             )
             saved = true
+        }
+    }
+
+    /** A copy with a readable file name, to open in or share with another app. */
+    suspend fun fileForOtherApps(): File? = document?.let { documentRepository.exportCopy(it) }
+
+    fun delete() {
+        val current = document ?: return
+        viewModelScope.launch {
+            documentRepository.delete(current)
+            deleted = true
         }
     }
 

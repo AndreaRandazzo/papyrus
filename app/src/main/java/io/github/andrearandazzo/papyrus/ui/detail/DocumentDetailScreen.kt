@@ -49,6 +49,27 @@ import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.ui.formatDay
 import io.github.andrearandazzo.papyrus.ui.formatInstantDate
 import io.github.andrearandazzo.papyrus.ui.home.KindBadge
+import io.github.andrearandazzo.papyrus.ui.DocumentIntents
+import io.github.andrearandazzo.papyrus.ui.DocumentThumbnail
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,10 +80,30 @@ fun DocumentDetailScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val form = viewModel.form
     val document = viewModel.document
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var confirmDelete by remember { mutableStateOf(false) }
+    val noAppMessage = stringResource(R.string.no_app_to_open)
 
-    // Leave once saved, or if the document disappeared.
-    LaunchedEffect(viewModel.saved, viewModel.notFound) {
-        if (viewModel.saved || viewModel.notFound) onBack()
+    // Leave once saved or deleted, or if the document disappeared.
+    LaunchedEffect(viewModel.saved, viewModel.deleted, viewModel.notFound) {
+        if (viewModel.saved || viewModel.deleted || viewModel.notFound) onBack()
+    }
+
+    val open: () -> Unit = {
+        scope.launch {
+            val file = viewModel.fileForOtherApps() ?: return@launch
+            if (!DocumentIntents.open(context, file, document!!.mimeType)) {
+                snackbarHostState.showSnackbar(noAppMessage)
+            }
+        }
+    }
+    val share: () -> Unit = {
+        scope.launch {
+            val file = viewModel.fileForOtherApps() ?: return@launch
+            DocumentIntents.share(context, file, document!!.mimeType)
+        }
     }
 
     Scaffold(
@@ -75,12 +116,16 @@ fun DocumentDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { confirmDelete = true }, enabled = document != null) {
+                        Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete))
+                    }
                     TextButton(onClick = viewModel::save, enabled = form?.isValid == true) {
                         Text(stringResource(R.string.save))
                     }
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (form != null && document != null) {
             DocumentForm(
@@ -88,8 +133,61 @@ fun DocumentDetailScreen(
                 document = document,
                 categories = categories,
                 onEdit = viewModel::edit,
+                onOpen = open,
+                onShare = share,
                 modifier = Modifier.padding(padding),
             )
+        }
+    }
+
+    if (confirmDelete && document != null) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(stringResource(R.string.delete_document_title, document.title)) },
+            text = { Text(stringResource(R.string.delete_document_body)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    viewModel.delete()
+                }) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(android.R.string.cancel)) }
+            },
+        )
+    }
+}
+
+/** Large preview (tap to open) with Open and Share buttons. */
+@Composable
+private fun PreviewSection(document: Document, onOpen: () -> Unit, onShare: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(onClick = onOpen),
+        ) {
+            DocumentThumbnail(
+                document = document,
+                width = 360.dp,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+                placeholder = { KindBadge(document.kind) },
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = onOpen, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.open))
+            }
+            OutlinedButton(onClick = onShare, modifier = Modifier.weight(1f)) {
+                Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.share))
+            }
         }
     }
 }
@@ -101,6 +199,8 @@ private fun DocumentForm(
     document: Document,
     categories: List<Category>,
     onEdit: ((DocumentForm) -> DocumentForm) -> Unit,
+    onOpen: () -> Unit,
+    onShare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
@@ -112,6 +212,8 @@ private fun DocumentForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        PreviewSection(document, onOpen, onShare)
+
         OutlinedTextField(
             value = form.title,
             onValueChange = { title -> onEdit { it.copy(title = title) } },

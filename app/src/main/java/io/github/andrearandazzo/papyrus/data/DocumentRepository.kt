@@ -20,11 +20,17 @@ class DocumentRepository(
 ) {
     private val storageDir = File(context.filesDir, "documents").apply { mkdirs() }
 
+    /** Readable-named copies handed to other apps; see [exportCopy]. Must match res/xml/file_paths.xml. */
+    private val sharedDir = File(context.cacheDir, "shared")
+
     val documents: Flow<List<Document>> = dao.observeAll()
 
     fun observe(id: Long): Flow<Document?> = dao.observe(id)
 
     suspend fun update(document: Document) = dao.update(document)
+
+    /** The stored file. Treat it as read-only. */
+    fun fileOf(document: Document): File = File(storageDir, document.fileName)
 
     /**
      * Copies the file behind [uri] into private storage and records it in [categoryId].
@@ -60,4 +66,27 @@ class DocumentRepository(
             throw e
         }
     }
+
+    /**
+     * Copies the document to a cache file named after its title (e.g. "Car insurance.pdf"),
+     * so apps it is opened or shared with show a readable name instead of the internal one.
+     */
+    suspend fun exportCopy(document: Document): File = withContext(Dispatchers.IO) {
+        val dir = File(sharedDir, document.id.toString())
+        dir.deleteRecursively()
+        dir.mkdirs()
+        val extension = document.fileName.substringAfterLast('.', missingDelimiterValue = "")
+        val name = safeFileName(document.title) + if (extension.isEmpty()) "" else ".$extension"
+        fileOf(document).copyTo(File(dir, name))
+    }
+
+    /** Removes the record first, then the files, so a failure never leaves a record without its file. */
+    suspend fun delete(document: Document) = withContext(Dispatchers.IO) {
+        dao.delete(document)
+        fileOf(document).delete()
+        File(sharedDir, document.id.toString()).deleteRecursively()
+    }
+
+    private fun safeFileName(title: String): String =
+        title.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_").trim().take(100).ifEmpty { "document" }
 }

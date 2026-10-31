@@ -1,6 +1,7 @@
 package io.github.andrearandazzo.papyrus.data
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
@@ -20,4 +21,7 @@ interface DocumentDao {
 
     @Update
     suspend fun update(document: Document)
+
+    @Delete
+    suspend fun delete(document: Document)
 }

@@ -4,6 +4,7 @@ import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.ImeAction
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
+import io.github.andrearandazzo.papyrus.ui.DocumentThumbnail
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -280,7 +284,24 @@ private fun DocumentRow(document: Document, categoryName: String?, onClick: () -
     ).joinToString(" · ")
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
-        leadingContent = { KindBadge(document.kind) },
+        leadingContent = {
+            val shape = RoundedCornerShape(8.dp)
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(shape)
+                    // Outline so a white page stands out from the background.
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+            ) {
+                DocumentThumbnail(
+                    document = document,
+                    width = 44.dp,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                    placeholder = { KindBadge(document.kind) },
+                )
+            }
+        },
         headlineContent = { Text(document.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingContent = {
             Column {

@@ -57,6 +57,11 @@
     <string name="expires_on">Expires %s</string>
     <string name="expired_on">Expired %s</string>
     <string name="added_on">Added %s</string>
+    <string name="open">Open</string>
+    <string name="share">Share</string>
+    <string name="no_app_to_open">No app on this phone can open this file</string>
+    <string name="delete_document_title">Delete “%s”?</string>
+    <string name="delete_document_body">The file will be removed from Papyrus. This can\'t be undone.</string>
 
     <!-- Categories -->
     <string name="categories">Categories</string>
