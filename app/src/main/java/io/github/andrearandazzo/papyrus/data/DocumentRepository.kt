@@ -22,11 +22,15 @@ class DocumentRepository(
 
     val documents: Flow<List<Document>> = dao.observeAll()
 
+    fun observe(id: Long): Flow<Document?> = dao.observe(id)
+
+    suspend fun update(document: Document) = dao.update(document)
+
     /**
-     * Copies the file behind [uri] into private storage and records it.
+     * Copies the file behind [uri] into private storage and records it in [categoryId].
      * The copy means the document survives even if the original is deleted.
      */
-    suspend fun import(uri: Uri): Document = withContext(Dispatchers.IO) {
+    suspend fun import(uri: Uri, categoryId: Long?): Document = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
         val displayName = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
             ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
@@ -47,6 +51,7 @@ class DocumentRepository(
                 mimeType = mimeType,
                 sizeBytes = size,
                 importedAt = System.currentTimeMillis(),
+                categoryId = categoryId,
             )
             document.copy(id = dao.insert(document))
         } catch (e: Throwable) {

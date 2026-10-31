@@ -1,28 +1,31 @@
 package io.github.andrearandazzo.papyrus.ui.home
 
-import android.text.format.DateUtils
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -48,8 +51,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.andrearandazzo.papyrus.R
+import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentKind
+import io.github.andrearandazzo.papyrus.ui.formatDay
+import io.github.andrearandazzo.papyrus.ui.formatInstantDate
+import io.github.andrearandazzo.papyrus.ui.isPast
 
 /** File types offered in the system file picker. */
 private val IMPORTABLE_TYPES = arrayOf(
@@ -61,8 +68,12 @@ private val IMPORTABLE_TYPES = arrayOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)) {
-    val documents by viewModel.documents.collectAsStateWithLifecycle()
+fun HomeScreen(
+    onOpenDocument: (Long) -> Unit,
+    onManageCategories: () -> Unit,
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val importing by viewModel.importing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalContext.current.resources
@@ -84,7 +95,19 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Fact
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    IconButton(onClick = onManageCategories) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = stringResource(R.string.manage_categories),
+                        )
+                    }
+                },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = { picker.launch(IMPORTABLE_TYPES) }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.import_documents))
@@ -94,60 +117,111 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Fact
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (importing) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (documents.isEmpty()) {
-                EmptyState()
-            } else {
-                DocumentList(documents)
+            if (state.categories.isNotEmpty()) {
+                CategoryFilter(state.categories, state.selectedCategory, viewModel::selectCategory)
+            }
+            when {
+                state.libraryEmpty -> EmptyState(
+                    stringResource(R.string.empty_title),
+                    stringResource(R.string.empty_body),
+                )
+                state.documents.isEmpty() -> EmptyState(
+                    stringResource(R.string.empty_category_title),
+                    stringResource(R.string.empty_category_body),
+                )
+                else -> DocumentList(state.documents, state.categories, onOpenDocument)
             }
         }
     }
 }
 
 @Composable
-private fun EmptyState() {
+private fun CategoryFilter(
+    categories: List<Category>,
+    selected: Category?,
+    onSelect: (Category?) -> Unit,
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = selected == null,
+                onClick = { onSelect(null) },
+                label = { Text(stringResource(R.string.filter_all)) },
+            )
+        }
+        items(categories, key = { it.id }) { category ->
+            FilterChip(
+                selected = category.id == selected?.id,
+                onClick = { onSelect(category) },
+                label = { Text(category.name) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(title: String, body: String) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.titleLarge)
-        Text(
-            stringResource(R.string.empty_body),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-        )
+        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Text(body, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
     }
 }
 
 @Composable
-private fun DocumentList(documents: List<Document>) {
+private fun DocumentList(
+    documents: List<Document>,
+    categories: List<Category>,
+    onOpenDocument: (Long) -> Unit,
+) {
+    val categoryNames = remember(categories) { categories.associate { it.id to it.name } }
     // Bottom padding keeps the last row clear of the "+" button.
     LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
         items(documents, key = { it.id }) { document ->
-            DocumentRow(document)
+            DocumentRow(document, categoryNames[document.categoryId], onClick = { onOpenDocument(document.id) })
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-private fun DocumentRow(document: Document) {
+private fun DocumentRow(document: Document, categoryName: String?, onClick: () -> Unit) {
     val context = LocalContext.current
-    val size = Formatter.formatShortFileSize(context, document.sizeBytes)
-    val date = DateUtils.formatDateTime(
-        context,
-        document.importedAt,
-        DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_ABBREV_MONTH,
-    )
+    val details = listOfNotNull(
+        categoryName,
+        Formatter.formatShortFileSize(context, document.sizeBytes),
+        formatInstantDate(document.importedAt),
+    ).joinToString(" · ")
     ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
         leadingContent = { KindBadge(document.kind) },
         headlineContent = { Text(document.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        supportingContent = { Text("$size · $date") },
+        supportingContent = {
+            Column {
+                Text(details, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                document.expiresAt?.let { expiry ->
+                    val expired = isPast(expiry)
+                    Text(
+                        text = stringResource(
+                            if (expired) R.string.expired_on else R.string.expires_on,
+                            formatDay(expiry),
+                        ),
+                        color = if (expired) MaterialTheme.colorScheme.error else Color.Unspecified,
+                    )
+                }
+            }
+        },
     )
 }
 
 @Composable
-private fun KindBadge(kind: DocumentKind) {
+fun KindBadge(kind: DocumentKind) {
     val (label, color) = when (kind) {
         DocumentKind.PDF -> stringResource(R.string.kind_pdf) to Color(0xFFC62828)
         DocumentKind.WORD -> stringResource(R.string.kind_word) to Color(0xFF1565C0)

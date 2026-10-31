@@ -2,7 +2,10 @@
     <string name="app_name">Papyrus</string>
     <string name="empty_title">No documents yet</string>
     <string name="empty_body">Tap + to add PDFs, Word files or photos. Your documents stay on this phone. Nothing is uploaded anywhere.</string>
+    <string name="empty_category_title">No documents in this category</string>
+    <string name="empty_category_body">Tap + to add documents straight into it, or assign one from its details.</string>
     <string name="import_documents">Add documents</string>
+    <string name="filter_all">All</string>
 
     <string name="kind_pdf">PDF</string>
     <string name="kind_word">DOC</string>
@@ -17,4 +20,42 @@
         <item quantity="one">%d file could not be added</item>
         <item quantity="other">%d files could not be added</item>
     </plurals>
+
+    <!-- Document details -->
+    <string name="document_details">Details</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="title">Title</string>
+    <string name="title_required">The title can\'t be empty</string>
+    <string name="category">Category</string>
+    <string name="no_category">No category</string>
+    <string name="note">Note</string>
+    <string name="expiry_date">Expiry date</string>
+    <string name="set_date">Set date</string>
+    <string name="clear_date">Remove expiry date</string>
+    <string name="expires_on">Expires %s</string>
+    <string name="expired_on">Expired %s</string>
+    <string name="added_on">Added %s</string>
+
+    <!-- Categories -->
+    <string name="categories">Categories</string>
+    <string name="manage_categories">Manage categories</string>
+    <string name="add_category">New category</string>
+    <string name="rename_category">Rename category</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="name">Name</string>
+    <string name="category_exists">A category with this name already exists</string>
+    <string name="delete_category_title">Delete “%s”?</string>
+    <string name="delete_category_body">Its documents will be kept, without a category.</string>
+
+    <!-- Created on first launch; users can rename or delete them. -->
+    <string-array name="default_categories">
+        <item>Identity</item>
+        <item>Health</item>
+        <item>Home</item>
+        <item>Car</item>
+        <item>Work</item>
+        <item>Finance</item>
+    </string-array>
 </resources>
