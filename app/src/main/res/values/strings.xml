@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Papyrus</string>
+    <string name="empty_title">No documents yet</string>
+    <string name="empty_body">Your documents stay on this phone. Nothing is uploaded anywhere.</string>
+</resources>
