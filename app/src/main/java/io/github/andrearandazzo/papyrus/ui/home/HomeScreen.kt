@@ -21,6 +21,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import android.content.res.Resources
+import java.time.LocalDate
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
@@ -91,24 +96,27 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val importing by viewModel.importing.collectAsStateWithLifecycle()
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilters by rememberSaveable { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
     val resources = LocalContext.current.resources
 
-    // The system picker needs no storage permission: the user chooses exactly what we can read.
+    // The system pickers need no storage permission: the user chooses exactly what we can read or write.
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         viewModel.import(uris)
     }
+    val backupTarget = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        uri?.let(viewModel::exportBackup)
+    }
+    val backupSource = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(viewModel::restoreBackup)
+    }
+    val restoreBackup = { backupSource.launch(BACKUP_TYPES) }
 
     LaunchedEffect(viewModel) {
-        viewModel.importResults.collect { result ->
-            val message = if (result.failed == 0) {
-                resources.getQuantityString(R.plurals.import_done, result.imported, result.imported)
-            } else {
-                resources.getQuantityString(R.plurals.import_failed, result.failed, result.failed)
-            }
-            snackbarHostState.showSnackbar(message)
+        viewModel.messages.collect { message ->
+            snackbarHostState.showSnackbar(message.text(resources))
         }
     }
 
@@ -117,10 +125,23 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    IconButton(onClick = onManageCategories) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.List,
-                            contentDescription = stringResource(R.string.manage_categories),
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.more_options))
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.categories)) },
+                            onClick = { showMenu = false; onManageCategories() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.backup_export)) },
+                            enabled = !state.libraryEmpty && !busy,
+                            onClick = { showMenu = false; backupTarget.launch(backupFileName()) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.backup_restore)) },
+                            enabled = !busy,
+                            onClick = { showMenu = false; restoreBackup() },
                         )
                     }
                 },
@@ -134,9 +155,18 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            if (importing) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (state.libraryEmpty) {
-                EmptyState(stringResource(R.string.empty_title), stringResource(R.string.empty_body))
+                EmptyState(
+                    stringResource(R.string.empty_title),
+                    stringResource(R.string.empty_body),
+                    // New phone? Offer to bring the old library back.
+                    action = {
+                        TextButton(onClick = restoreBackup, enabled = !busy) {
+                            Text(stringResource(R.string.backup_restore_from))
+                        }
+                    },
+                )
             } else {
                 SearchField(viewModel.query, viewModel::search)
                 FilterRow(
@@ -174,6 +204,28 @@ fun HomeScreen(
             onDismiss = { showFilters = false },
         )
     }
+}
+
+/** Some file providers label ZIP files differently, so accept all the common types. */
+private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
+
+private fun backupFileName() = "papyrus-backup-${LocalDate.now()}.zip"
+
+private fun HomeMessage.text(resources: Resources): String = when (this) {
+    is HomeMessage.Imported ->
+        if (failed == 0) resources.getQuantityString(R.plurals.import_done, imported, imported)
+        else resources.getQuantityString(R.plurals.import_failed, failed, failed)
+    is HomeMessage.BackupSaved -> resources.getQuantityString(R.plurals.backup_saved, documents, documents)
+    HomeMessage.BackupFailed -> resources.getString(R.string.backup_failed)
+    is HomeMessage.Restored -> buildString {
+        append(resources.getQuantityString(R.plurals.restore_done, restored, restored))
+        if (alreadyPresent > 0) {
+            append(" · ")
+            append(resources.getQuantityString(R.plurals.restore_skipped, alreadyPresent, alreadyPresent))
+        }
+    }
+    HomeMessage.NotABackup -> resources.getString(R.string.restore_not_a_backup)
+    HomeMessage.RestoreFailed -> resources.getString(R.string.restore_failed)
 }
 
 @Composable

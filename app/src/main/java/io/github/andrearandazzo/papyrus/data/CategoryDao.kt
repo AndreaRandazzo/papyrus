@@ -12,6 +12,9 @@ interface CategoryDao {
     @Query("SELECT * FROM categories ORDER BY name")
     fun observeAll(): Flow<List<Category>>
 
+    @Query("SELECT * FROM categories")
+    suspend fun getAll(): List<Category>
+
     /** Throws SQLiteConstraintException if the name already exists. */
     @Insert
     suspend fun insert(category: Category): Long

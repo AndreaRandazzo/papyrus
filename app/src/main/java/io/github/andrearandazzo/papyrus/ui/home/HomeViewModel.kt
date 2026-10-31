@@ -17,6 +17,8 @@ import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
+import io.github.andrearandazzo.papyrus.data.backup.BackupManager
+import io.github.andrearandazzo.papyrus.data.backup.InvalidBackupException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +34,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
-data class ImportResult(val imported: Int, val failed: Int)
+/** One-off results, each shown once as a snackbar. */
+sealed interface HomeMessage {
+    data class Imported(val imported: Int, val failed: Int) : HomeMessage
+    data class BackupSaved(val documents: Int) : HomeMessage
+    data object BackupFailed : HomeMessage
+    data class Restored(val restored: Int, val alreadyPresent: Int) : HomeMessage
+    data object NotABackup : HomeMessage
+    data object RestoreFailed : HomeMessage
+}
 
 data class HomeState(
     /** Documents matching [filter], in its sort order. */
@@ -46,6 +56,7 @@ data class HomeState(
 class HomeViewModel(
     private val documentRepository: DocumentRepository,
     categoryRepository: CategoryRepository,
+    private val backupManager: BackupManager,
 ) : ViewModel() {
 
     /** Search text. Compose state, so the text field updates without lag while typing. */
@@ -75,12 +86,12 @@ class HomeViewModel(
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
-    private val _importing = MutableStateFlow(false)
-    val importing: StateFlow<Boolean> = _importing.asStateFlow()
+    private val _busy = MutableStateFlow(false)
+    /** True while importing or backing up/restoring. */
+    val busy: StateFlow<Boolean> = _busy.asStateFlow()
 
-    private val _importResults = Channel<ImportResult>(Channel.BUFFERED)
-    /** One-off results, shown once as a snackbar. */
-    val importResults: Flow<ImportResult> = _importResults.receiveAsFlow()
+    private val _messages = Channel<HomeMessage>(Channel.BUFFERED)
+    val messages: Flow<HomeMessage> = _messages.receiveAsFlow()
 
     fun search(text: String) {
         query = text
@@ -107,8 +118,7 @@ class HomeViewModel(
     fun import(uris: List<Uri>) {
         if (uris.isEmpty()) return
         val categoryId = state.value.filter.categoryId
-        viewModelScope.launch {
-            _importing.value = true
+        runBusy {
             var failed = 0
             for (uri in uris) {
                 try {
@@ -120,8 +130,45 @@ class HomeViewModel(
                     failed++
                 }
             }
-            _importing.value = false
-            _importResults.send(ImportResult(imported = uris.size - failed, failed = failed))
+            HomeMessage.Imported(imported = uris.size - failed, failed = failed)
+        }
+    }
+
+    fun exportBackup(target: Uri) = runBusy {
+        try {
+            HomeMessage.BackupSaved(backupManager.export(target))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Backup failed", e)
+            HomeMessage.BackupFailed
+        }
+    }
+
+    fun restoreBackup(source: Uri) = runBusy {
+        try {
+            backupManager.restore(source).let { HomeMessage.Restored(it.restored, it.alreadyPresent) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: InvalidBackupException) {
+            Log.w(TAG, "Not a backup", e)
+            HomeMessage.NotABackup
+        } catch (e: Exception) {
+            Log.w(TAG, "Restore failed", e)
+            HomeMessage.RestoreFailed
+        }
+    }
+
+    /** Runs [work] in the ViewModel's scope (survives rotation), showing progress, then its message. */
+    private fun runBusy(work: suspend () -> HomeMessage) {
+        viewModelScope.launch {
+            _busy.value = true
+            val message = try {
+                work()
+            } finally {
+                _busy.value = false
+            }
+            _messages.send(message)
         }
     }
 
@@ -131,7 +178,7 @@ class HomeViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as PapyrusApp
-                HomeViewModel(app.documentRepository, app.categoryRepository)
+                HomeViewModel(app.documentRepository, app.categoryRepository, app.backupManager)
             }
         }
     }

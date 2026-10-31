@@ -13,6 +13,9 @@ interface DocumentDao {
     @Query("SELECT * FROM documents ORDER BY importedAt DESC")
     fun observeAll(): Flow<List<Document>>
 
+    @Query("SELECT * FROM documents")
+    suspend fun getAll(): List<Document>
+
     @Query("SELECT * FROM documents WHERE id = :id")
     fun observe(id: Long): Flow<Document?>
 

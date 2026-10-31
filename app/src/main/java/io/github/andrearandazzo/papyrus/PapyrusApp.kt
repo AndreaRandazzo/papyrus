@@ -8,6 +8,7 @@ import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
 import io.github.andrearandazzo.papyrus.data.PapyrusDatabase
 import io.github.andrearandazzo.papyrus.data.ThumbnailLoader
+import io.github.andrearandazzo.papyrus.data.backup.BackupManager
 
 /** Creates the app-wide singletons once, when first needed. */
 class PapyrusApp : Application() {
@@ -20,6 +21,7 @@ class PapyrusApp : Application() {
     val documentRepository by lazy { DocumentRepository(this, database.documentDao()) }
     val categoryRepository by lazy { CategoryRepository(database.categoryDao()) }
     val thumbnails by lazy { ThumbnailLoader(documentRepository) }
+    val backupManager by lazy { BackupManager(this, database, documentRepository) }
 
     /** On a fresh install, start with a few useful categories in the phone's language. */
     private val seedDefaultCategories = object : RoomDatabase.Callback() {

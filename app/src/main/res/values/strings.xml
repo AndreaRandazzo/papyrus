@@ -75,6 +75,27 @@
     <string name="delete_category_title">Delete “%s”?</string>
     <string name="delete_category_body">Its documents will be kept, without a category.</string>
 
+    <!-- Backup -->
+    <string name="more_options">More options</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_restore">Restore backup</string>
+    <string name="backup_restore_from">Restore from a backup</string>
+    <plurals name="backup_saved">
+        <item quantity="one">Backup saved with %d document</item>
+        <item quantity="other">Backup saved with %d documents</item>
+    </plurals>
+    <string name="backup_failed">The backup could not be saved</string>
+    <plurals name="restore_done">
+        <item quantity="one">%d document restored</item>
+        <item quantity="other">%d documents restored</item>
+    </plurals>
+    <plurals name="restore_skipped">
+        <item quantity="one">%d already here</item>
+        <item quantity="other">%d already here</item>
+    </plurals>
+    <string name="restore_not_a_backup">This file isn\'t a Papyrus backup, or it is damaged. Nothing was changed.</string>
+    <string name="restore_failed">The backup could not be restored. Nothing was changed.</string>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identity</item>

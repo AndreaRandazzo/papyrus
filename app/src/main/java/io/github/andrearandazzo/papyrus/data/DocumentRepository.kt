@@ -32,6 +32,10 @@ class DocumentRepository(
     /** The stored file. Treat it as read-only. */
     fun fileOf(document: Document): File = File(storageDir, document.fileName)
 
+    /** A new, uniquely named file in storage. Unique names mean two "scan.pdf" never clash. */
+    fun newStorageFile(extension: String): File =
+        File(storageDir, UUID.randomUUID().toString() + if (extension.isEmpty()) "" else ".$extension")
+
     /**
      * Copies the file behind [uri] into private storage and records it in [categoryId].
      * The copy means the document survives even if the original is deleted.
@@ -45,7 +49,7 @@ class DocumentRepository(
         val extension = displayName.substringAfterLast('.', missingDelimiterValue = "")
             .ifEmpty { MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType).orEmpty() }
 
-        val target = File(storageDir, UUID.randomUUID().toString() + if (extension.isEmpty()) "" else ".$extension")
+        val target = newStorageFile(extension)
         try {
             val size = resolver.openInputStream(uri)?.use { input ->
                 target.outputStream().use { output -> input.copyTo(output) }
