@@ -108,7 +108,24 @@
     </plurals>
     <string name="add_category_button">Add category</string>
     <string name="add_category">New category</string>
-    <string name="rename_category">Rename category</string>
+    <string name="edit_category">Edit category</string>
+    <string name="category_icon">Icon</string>
+    <string name="icon_identity">Identity</string>
+    <string name="icon_health">Health</string>
+    <string name="icon_medical">Medical</string>
+    <string name="icon_car">Car</string>
+    <string name="icon_home">Home</string>
+    <string name="icon_finance">Finance</string>
+    <string name="icon_savings">Savings</string>
+    <string name="icon_receipts">Receipts</string>
+    <string name="icon_insurance">Insurance</string>
+    <string name="icon_work">Work</string>
+    <string name="icon_school">School</string>
+    <string name="icon_travel">Travel</string>
+    <string name="icon_family">Family</string>
+    <string name="icon_pets">Pets</string>
+    <string name="icon_shopping">Shopping</string>
+    <string name="icon_folder">Folder</string>
     <string name="category_name_hint">Choose a name that is easy to recognize.</string>
     <string name="add">Add</string>
     <string name="rename">Rename</string>

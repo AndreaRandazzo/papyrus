@@ -8,7 +8,8 @@ import org.junit.Test
 
 class BackupFormatTest {
 
-    private val car = Category(id = 7, name = "Car")
+    private val car = Category(id = 7, name = "Car", icon = "car")
+    private val dog = Category(id = 8, name = "Dog")
     private val insurance = Document(
         id = 1,
         title = "Polizza “auto” città",
@@ -27,9 +28,9 @@ class BackupFormatTest {
 
     @Test
     fun roundTripKeepsEverything() {
-        val manifest = BackupFormat.parse(BackupFormat.toJson(listOf(car), listOf(insurance, photo), 0))
+        val manifest = BackupFormat.parse(BackupFormat.toJson(listOf(car, dog), listOf(insurance, photo), 0))
 
-        assertEquals(listOf(BackupCategory(7, "Car")), manifest.categories)
+        assertEquals(listOf(BackupCategory(7, "Car", "car"), BackupCategory(8, "Dog", null)), manifest.categories)
         assertEquals(
             BackupDocument(
                 title = "Polizza “auto” città",
@@ -45,6 +46,12 @@ class BackupFormatTest {
         )
         assertEquals(null, manifest.documents[1].categoryId)
         assertEquals(null, manifest.documents[1].expiresAt)
+    }
+
+    @Test
+    fun readsBackupsMadeBeforeIcons() {
+        val old = """{"format":1,"categories":[{"id":1,"name":"Car"}],"documents":[]}"""
+        assertEquals(listOf(BackupCategory(1, "Car", null)), BackupFormat.parse(old).categories)
     }
 
     @Test

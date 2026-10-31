@@ -27,11 +27,12 @@ class CategoriesViewModel(
         categories.map { CategoryRow(it, counts[it.id] ?: 0) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** Returns false if the name is already taken. */
-    suspend fun add(name: String): Boolean = repository.add(name)
+    /** [icon] null means "pick from the name". Returns false if the name is already taken. */
+    suspend fun add(name: String, icon: String?): Boolean = repository.add(name, icon)
 
     /** Returns false if the name is already taken. */
-    suspend fun rename(category: Category, name: String): Boolean = repository.rename(category, name)
+    suspend fun update(category: Category, name: String, icon: String?): Boolean =
+        repository.update(category, name, icon)
 
     fun delete(category: Category) {
         viewModelScope.launch { repository.delete(category) }

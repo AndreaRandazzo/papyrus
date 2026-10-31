@@ -10,4 +10,9 @@ import androidx.room.PrimaryKey
 data class Category(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(collate = ColumnInfo.NOCASE) val name: String,
+    /**
+     * Key of the icon the user picked (see CategoryIcon), or null to choose one from the name.
+     * A stable text key, not a resource id, so it survives app updates and backups.
+     */
+    val icon: String? = null,
 )

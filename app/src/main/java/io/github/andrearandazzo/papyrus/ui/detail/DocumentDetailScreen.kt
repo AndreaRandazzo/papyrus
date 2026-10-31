@@ -341,7 +341,7 @@ private fun CategoryDropdown(
             categories.forEach { category ->
                 DropdownMenuItem(
                     text = { Text(category.name) },
-                    leadingIcon = { SymbolIcon(categoryStyle(category.name).icon, contentDescription = null) },
+                    leadingIcon = { SymbolIcon(categoryStyle(category).icon, contentDescription = null) },
                     onClick = { onSelect(category.id); expanded = false },
                 )
             }

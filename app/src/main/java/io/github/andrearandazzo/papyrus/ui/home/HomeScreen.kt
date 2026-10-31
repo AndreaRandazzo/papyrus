@@ -413,7 +413,7 @@ private fun FilterRow(
             }
         }
         items(categories, key = { it.id }) { category ->
-            CategoryChip(category.name, categoryStyle(category.name).icon, category.id == filter.categoryId) {
+            CategoryChip(category.name, categoryStyle(category).icon, category.id == filter.categoryId) {
                 onSelectCategory(category)
             }
         }

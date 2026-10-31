@@ -105,7 +105,9 @@ class BackupManager(
     private suspend fun restoreCategories(backup: List<BackupCategory>): Map<Long, Long> {
         val byName = categoryDao.getAll().associate { it.name.lowercase() to it.id }.toMutableMap()
         return backup.filter { it.name.isNotEmpty() }.associate { category ->
-            val id = byName.getOrPut(category.name.lowercase()) { categoryDao.insert(Category(name = category.name)) }
+            val id = byName.getOrPut(category.name.lowercase()) {
+                categoryDao.insert(Category(name = category.name, icon = category.icon))
+            }
             category.id to id
         }
     }

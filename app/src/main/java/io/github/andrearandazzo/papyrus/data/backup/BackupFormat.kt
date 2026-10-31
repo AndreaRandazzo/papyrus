@@ -23,7 +23,14 @@ object BackupFormat {
             .put("app", "Papyrus")
             .put("format", VERSION)
             .put("createdAt", createdAt)
-            .put("categories", JSONArray(categories.map { JSONObject().put("id", it.id).put("name", it.name) }))
+            .put(
+                "categories",
+                JSONArray(
+                    categories.map {
+                        JSONObject().put("id", it.id).put("name", it.name).put("icon", it.icon ?: JSONObject.NULL)
+                    },
+                ),
+            )
             .put(
                 "documents",
                 JSONArray(
@@ -49,7 +56,12 @@ object BackupFormat {
         if (format > VERSION) throw InvalidBackupException("Backup format $format is newer than $VERSION")
 
         val categories = root.getJSONArray("categories").objects().map {
-            BackupCategory(id = it.getLong("id"), name = it.getString("name").trim())
+            BackupCategory(
+                id = it.getLong("id"),
+                name = it.getString("name").trim(),
+                // Missing in backups made before icons existed.
+                icon = if (it.isNull("icon")) null else it.getString("icon"),
+            )
         }
         val categoryIds = categories.map { it.id }.toSet()
         val documents = root.getJSONArray("documents").objects().map {
@@ -84,7 +96,7 @@ object BackupFormat {
 
 data class BackupManifest(val categories: List<BackupCategory>, val documents: List<BackupDocument>)
 
-data class BackupCategory(val id: Long, val name: String)
+data class BackupCategory(val id: Long, val name: String, val icon: String? = null)
 
 data class BackupDocument(
     val title: String,

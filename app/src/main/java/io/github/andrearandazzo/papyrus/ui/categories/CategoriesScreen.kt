@@ -48,6 +48,16 @@ import io.github.andrearandazzo.papyrus.R
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
 import io.github.andrearandazzo.papyrus.ui.components.categoryStyle
+import io.github.andrearandazzo.papyrus.ui.components.CategoryIcon
+import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import kotlinx.coroutines.launch
 
 /** Which dialog is open, if any. */
@@ -111,18 +121,20 @@ fun CategoriesScreen(
 
     when (val current = dialog) {
         null -> Unit
-        CategoryDialog.Add -> NameDialog(
+        CategoryDialog.Add -> CategoryEditDialog(
             title = stringResource(R.string.add_category),
             confirmLabel = stringResource(R.string.add),
             initialName = "",
+            initialIcon = null,
             onSave = viewModel::add,
             onDismiss = { dialog = null },
         )
-        is CategoryDialog.Rename -> NameDialog(
-            title = stringResource(R.string.rename_category),
+        is CategoryDialog.Rename -> CategoryEditDialog(
+            title = stringResource(R.string.edit_category),
             confirmLabel = stringResource(R.string.save),
             initialName = current.category.name,
-            onSave = { name -> viewModel.rename(current.category, name) },
+            initialIcon = current.category.icon,
+            onSave = { name, icon -> viewModel.update(current.category, name, icon) },
             onDismiss = { dialog = null },
         )
         is CategoryDialog.Delete -> AlertDialog(
@@ -145,7 +157,7 @@ fun CategoriesScreen(
 
 @Composable
 private fun CategoryItem(row: CategoryRow, onRename: () -> Unit, onDelete: () -> Unit) {
-    val style = categoryStyle(row.category.name)
+    val style = categoryStyle(row.category)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -178,25 +190,43 @@ private fun CategoryItem(row: CategoryRow, onRename: () -> Unit, onDelete: () ->
     }
 }
 
-/** Asks for a category name; stays open with an error if the name is taken. */
+/**
+ * Asks for a category name and icon; stays open with an error if the name is taken.
+ * Until the user taps an icon, the one suggested by the name is shown and nothing is saved,
+ * so the category keeps following its name.
+ */
 @Composable
-private fun NameDialog(
+private fun CategoryEditDialog(
     title: String,
     confirmLabel: String,
     initialName: String,
-    onSave: suspend (String) -> Boolean,
+    initialIcon: String?,
+    onSave: suspend (name: String, icon: String?) -> Boolean,
     onDismiss: () -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
+    var picked by remember { mutableStateOf(CategoryIcon.fromKey(initialIcon)) }
     var nameTaken by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val shown = picked ?: CategoryIcon.suggestedFor(name)
+    val preview = categoryStyle(name, picked?.key)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { SymbolIcon(R.drawable.ic_create_new_folder, contentDescription = null) },
+        icon = {
+            Box(
+                Modifier.size(48.dp).background(preview.tint.copy(alpha = 0.3f), MaterialTheme.shapes.small),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(painterResource(preview.icon), contentDescription = null)
+            }
+        },
         title = { Text(title, modifier = Modifier.fillMaxWidth()) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            ) {
                 Text(stringResource(R.string.category_name_hint))
                 OutlinedTextField(
                     value = name,
@@ -208,6 +238,8 @@ private fun NameDialog(
                     textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
+                SectionLabel(stringResource(R.string.category_icon))
+                IconPicker(selected = shown, onSelect = { picked = it })
             }
         },
         confirmButton = {
@@ -215,7 +247,7 @@ private fun NameDialog(
                 enabled = name.isNotBlank(),
                 onClick = {
                     scope.launch {
-                        if (onSave(name)) onDismiss() else nameTaken = true
+                        if (onSave(name, picked?.key)) onDismiss() else nameTaken = true
                     }
                 },
             ) { Text(confirmLabel) }
@@ -224,4 +256,32 @@ private fun NameDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         },
     )
+}
+
+@Composable
+private fun IconPicker(selected: CategoryIcon?, onSelect: (CategoryIcon) -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        CategoryIcon.entries.forEach { icon ->
+            val isSelected = icon == selected
+            val shape = MaterialTheme.shapes.small
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(shape)
+                    .background(if (isSelected) icon.tint.copy(alpha = 0.35f) else Color.Transparent)
+                    .border(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        shape = shape,
+                    )
+                    .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(icon) }),
+            ) {
+                Icon(painterResource(icon.drawable), contentDescription = stringResource(icon.label))
+            }
+        }
+    }
 }
