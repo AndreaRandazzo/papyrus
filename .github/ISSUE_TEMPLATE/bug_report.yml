@@ -1,0 +1,52 @@
+name: Segnala un bug / Report a bug
+description: Qualcosa non funziona come dovrebbe. / Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione! Non allegare documenti personali o dati sensibili.
+        Thanks for reporting! Please don't attach personal documents or sensitive data.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Cosa è successo? / What happened?
+      description: Descrivi il problema. / Describe the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Come riprodurlo / Steps to reproduce
+      placeholder: |
+        1. Apri / Open ...
+        2. Tocca / Tap ...
+        3. ...
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Cosa ti aspettavi? / What did you expect?
+
+  # The app fills these in when the form is opened from Settings.
+  - type: input
+    id: app-version
+    attributes:
+      label: Versione di Papyrus / Papyrus version
+      placeholder: "1.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Versione di Android / Android version
+      placeholder: "Android 15"
+
+  - type: input
+    id: device
+    attributes:
+      label: Telefono / Phone model
+      placeholder: "Pixel 8"

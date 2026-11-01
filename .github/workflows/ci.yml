@@ -1,0 +1,49 @@
+name: CI
+
+# Builds, tests and lints every Pull Request and every push to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch cancels the older, now pointless, run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Caches Gradle downloads and verifies gradle-wrapper.jar is the genuine one.
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew lintDebug
+
+      # Release build runs R8 (code shrinking), which can fail where debug doesn't.
+      # No signing key here, so the APK is unsigned; that's expected.
+      - name: Build debug and release
+        run: ./gradlew assembleDebug assembleRelease
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: app/build/reports/
+          retention-days: 7
