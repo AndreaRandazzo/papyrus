@@ -2,6 +2,7 @@ package io.github.andrearandazzo.papyrus.data.backup
 
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
+import io.github.andrearandazzo.papyrus.data.StarterCategories
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -28,6 +29,7 @@ object BackupFormat {
                 JSONArray(
                     categories.map {
                         JSONObject().put("id", it.id).put("name", it.name).put("icon", it.icon ?: JSONObject.NULL)
+                            .put("starterKey", it.starterKey ?: JSONObject.NULL)
                     },
                 ),
             )
@@ -61,6 +63,12 @@ object BackupFormat {
                 name = it.getString("name").trim(),
                 // Missing in backups made before icons existed.
                 icon = if (it.isNull("icon")) null else it.getString("icon"),
+                starterKey = when {
+                    // Older backups have no such field: recognize starters by their name instead.
+                    !it.has("starterKey") -> StarterCategories.keyForName(it.getString("name"))
+                    it.isNull("starterKey") -> null
+                    else -> it.getString("starterKey")
+                },
             )
         }
         val categoryIds = categories.map { it.id }.toSet()
@@ -96,7 +104,7 @@ object BackupFormat {
 
 data class BackupManifest(val categories: List<BackupCategory>, val documents: List<BackupDocument>)
 
-data class BackupCategory(val id: Long, val name: String, val icon: String? = null)
+data class BackupCategory(val id: Long, val name: String, val icon: String? = null, val starterKey: String? = null)
 
 data class BackupDocument(
     val title: String,

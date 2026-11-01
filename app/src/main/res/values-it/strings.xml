@@ -276,13 +276,11 @@
     <string name="scan_discard">Elimina</string>
     <string name="scan_keep">Continua</string>
 
-    <!-- Created on first launch; users can rename or delete them. -->
-    <string-array name="default_categories">
-        <item>Identità</item>
-        <item>Salute</item>
-        <item>Casa</item>
-        <item>Auto</item>
-        <item>Lavoro</item>
-        <item>Finanze</item>
-    </string-array>
+    <!-- Starter categories, created on first launch. Until renamed they follow the app's language. -->
+    <string name="starter_identity">Identità</string>
+    <string name="starter_health">Salute</string>
+    <string name="starter_home">Casa</string>
+    <string name="starter_car">Auto</string>
+    <string name="starter_work">Lavoro</string>
+    <string name="starter_finance">Finanze</string>
 </resources>

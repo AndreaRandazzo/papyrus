@@ -101,12 +101,21 @@ class BackupManager(
         RestoreResult(restored = toRestore.size, alreadyPresent = manifest.documents.size - toRestore.size)
     }
 
-    /** Maps each backup category id to a category here, reusing ones with the same name. */
+    /**
+     * Maps each backup category id to a category here: the same starter (so a backup's "Health"
+     * lands in an Italian phone's "Salute"), else one with the same name, else a new one.
+     */
     private suspend fun restoreCategories(backup: List<BackupCategory>): Map<Long, Long> {
-        val byName = categoryDao.getAll().associate { it.name.lowercase() to it.id }.toMutableMap()
+        val existing = categoryDao.getAll()
+        val byStarter = existing.filter { it.starterKey != null }.associate { it.starterKey!! to it.id }.toMutableMap()
+        val byName = existing.associate { it.name.lowercase() to it.id }.toMutableMap()
         return backup.filter { it.name.isNotEmpty() }.associate { category ->
-            val id = byName.getOrPut(category.name.lowercase()) {
-                categoryDao.insert(Category(name = category.name, icon = category.icon))
+            val key = category.starterKey
+            val id = key?.let(byStarter::get) ?: byName.getOrPut(category.name.lowercase()) {
+                // A new starter keeps its key; the next screen to open renames it to the app's language.
+                val starterKey = key?.takeIf { it !in byStarter }
+                categoryDao.insert(Category(name = category.name, icon = category.icon, starterKey = starterKey))
+                    .also { id -> starterKey?.let { byStarter[it] = id } }
             }
             category.id to id
         }

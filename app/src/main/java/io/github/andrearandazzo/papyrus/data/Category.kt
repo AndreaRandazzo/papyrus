@@ -15,4 +15,9 @@ data class Category(
      * A stable text key, not a resource id, so it survives app updates and backups.
      */
     val icon: String? = null,
+    /**
+     * Set on a starter category the user hasn't renamed (see StarterCategories): its [name] then
+     * follows the app's language. Cleared when the user renames it.
+     */
+    val starterKey: String? = null,
 )
