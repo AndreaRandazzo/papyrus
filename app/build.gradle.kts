@@ -15,8 +15,8 @@ android {
         applicationId = "io.github.andrearandazzo.papyrus"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     // The release key lives outside the project (never in git). Without it the release build is
@@ -57,6 +57,13 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    // Don't embed the encrypted, Google-only dependency report in the APK: F-Droid rejects it,
+    // and it would make F-Droid's build differ from ours (reproducible builds).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     // Lists the translated languages (res/values-*) so Android 13+ offers them in

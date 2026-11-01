@@ -1,0 +1,1 @@
+New papyrus-plant logo with a proper themed (single-color) icon. Build changes for F-Droid.
