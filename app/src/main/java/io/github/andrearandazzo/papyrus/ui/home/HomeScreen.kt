@@ -81,6 +81,7 @@ import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentKind
+import io.github.andrearandazzo.papyrus.data.ImportResult
 import io.github.andrearandazzo.papyrus.data.SortOrder
 import io.github.andrearandazzo.papyrus.ui.DocumentIntents
 import io.github.andrearandazzo.papyrus.ui.DocumentTile

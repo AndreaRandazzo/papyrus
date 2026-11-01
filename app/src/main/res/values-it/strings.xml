@@ -238,6 +238,15 @@
     <string name="feedback_privacy">Le segnalazioni si aprono su GitHub nel browser, con versione dell\'app, versione di Android e modello del telefono già compilati. Non viene inviato nulla finché non confermi. Non allegare mai documenti personali.</string>
     <string name="no_app_to_open_link">Nessuna app su questo telefono può aprire questo link</string>
 
+    <!-- Share to Papyrus -->
+    <string name="share_title">Salva in Papyrus</string>
+    <string name="share_nothing">Niente da salvare: Papyrus accetta PDF, file Word e immagini</string>
+    <plurals name="share_files">
+        <item quantity="one">%d file</item>
+        <item quantity="many">%d file</item>
+        <item quantity="other">%d file</item>
+    </plurals>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identità</item>

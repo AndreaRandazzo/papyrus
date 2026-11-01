@@ -14,7 +14,7 @@ object FeedbackLinks {
     const val LICENSE = "https://www.gnu.org/licenses/gpl-3.0.html"
 
     /** Shown as an option only when set. Public: it ends up in the app and its source code. */
-    const val EMAIL = ""
+    const val EMAIL = "papyrus.app00@gmail.com"
 
     fun bugReport(info: DeviceInfo): String = issueForm(
         "bug_report.yml",
