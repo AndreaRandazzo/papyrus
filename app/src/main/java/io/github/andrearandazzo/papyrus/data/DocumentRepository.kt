@@ -104,6 +104,33 @@ class DocumentRepository(
     }
 
     /**
+     * Stores a file Papyrus made itself (e.g. a scanned PDF) as a new document. [source] is moved
+     * into storage, so it's gone afterwards whether or not this succeeds.
+     */
+    suspend fun addFile(source: File, title: String, mimeType: String, categoryId: Long?): Document =
+        withContext(Dispatchers.IO) {
+            val target = newStorageFile(source.extension)
+            try {
+                source.copyTo(target)
+                val document = Document(
+                    title = title,
+                    fileName = target.name,
+                    mimeType = mimeType,
+                    sizeBytes = target.length(),
+                    importedAt = System.currentTimeMillis(),
+                    categoryId = categoryId,
+                )
+                document.copy(id = dao.insert(document))
+            } catch (e: Throwable) {
+                // Never leave an orphan file without its database row.
+                target.delete()
+                throw e
+            } finally {
+                source.delete()
+            }
+        }
+
+    /**
      * Copies the document to a cache file named after its title (e.g. "Car insurance.pdf"),
      * so apps it is opened or shared with show a readable name instead of the internal one.
      */

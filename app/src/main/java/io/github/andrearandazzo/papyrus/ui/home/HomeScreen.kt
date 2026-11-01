@@ -40,6 +40,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -118,12 +119,14 @@ fun HomeScreen(
     onOpenDocument: (Long) -> Unit,
     onOpenBackup: () -> Unit,
     onOpenSettings: () -> Unit,
+    onScan: () -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val importing by viewModel.importing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showFilters by rememberSaveable { mutableStateOf(false) }
+    var showAddMenu by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Document?>(null) }
     val context = LocalContext.current
     // Follows language changes, unlike context.resources.
@@ -135,7 +138,9 @@ fun HomeScreen(
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         viewModel.import(uris)
     }
-    val addDocuments = { picker.launch(IMPORTABLE_TYPES) }
+    val pickFiles = { picker.launch(IMPORTABLE_TYPES) }
+    // "+" offers both ways of adding: scanning paper or picking files.
+    val addDocuments = { showAddMenu = true }
 
     val actions = DocumentActions(
         open = { document ->
@@ -233,6 +238,14 @@ fun HomeScreen(
                 )
             }
         }
+    }
+
+    if (showAddMenu) {
+        AddDocumentSheet(
+            onScan = { showAddMenu = false; onScan() },
+            onPickFiles = { showAddMenu = false; pickFiles() },
+            onDismiss = { showAddMenu = false },
+        )
     }
 
     if (showFilters) {
@@ -522,6 +535,40 @@ private fun DocumentMenu(document: Document, actions: DocumentActions) {
             MenuItem(R.drawable.ic_share, stringResource(R.string.share)) { expanded = false; actions.share(document) }
             MenuItem(R.drawable.ic_edit, stringResource(R.string.edit_details)) { expanded = false; actions.edit(document) }
             MenuItem(R.drawable.ic_delete, stringResource(R.string.delete)) { expanded = false; actions.delete(document) }
+        }
+    }
+}
+
+/** "+" menu: scan a paper document with the camera, or pick existing files. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddDocumentSheet(onScan: () -> Unit, onPickFiles: () -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp)) {
+            AddOption(R.drawable.ic_duo_camera, stringResource(R.string.add_scan), stringResource(R.string.add_scan_body), onScan)
+            AddOption(R.drawable.ic_file_plus, stringResource(R.string.add_files), stringResource(R.string.add_files_body), onPickFiles)
+        }
+    }
+}
+
+@Composable
+private fun AddOption(icon: Int, title: String, body: String, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+    ) {
+        Box(
+            Modifier.size(48.dp).background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center,
+        ) { SymbolIcon(icon, contentDescription = null) }
+        Spacer(Modifier.width(16.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
