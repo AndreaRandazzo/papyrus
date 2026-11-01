@@ -219,6 +219,25 @@
     <string name="about_source">Codice sorgente</string>
     <string name="about_source_body">Visita il repository del progetto</string>
 
+    <!-- Settings -->
+    <string name="settings">Impostazioni</string>
+    <string name="settings_appearance">Aspetto</string>
+    <string name="theme">Tema</string>
+    <string name="theme_system">Come il telefono</string>
+    <string name="theme_light">Chiaro</string>
+    <string name="theme_dark">Scuro</string>
+    <string name="language">Lingua</string>
+    <string name="language_system">Come il telefono</string>
+    <string name="settings_feedback">Aiuto e feedback</string>
+    <string name="report_bug">Segnala un bug</string>
+    <string name="report_bug_body">Qualcosa non funziona come dovrebbe</string>
+    <string name="request_feature">Richiedi una funzione</string>
+    <string name="request_feature_body">Suggerisci un\'idea per migliorare Papyrus</string>
+    <string name="send_email">Invia un\'email</string>
+    <string name="feedback_email_subject">Feedback su Papyrus</string>
+    <string name="feedback_privacy">Le segnalazioni si aprono su GitHub nel browser, con versione dell\'app, versione di Android e modello del telefono già compilati. Non viene inviato nulla finché non confermi. Non allegare mai documenti personali.</string>
+    <string name="no_app_to_open_link">Nessuna app su questo telefono può aprire questo link</string>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identità</item>

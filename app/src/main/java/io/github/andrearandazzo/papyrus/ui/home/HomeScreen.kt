@@ -116,6 +116,7 @@ private class DocumentActions(
 fun HomeScreen(
     onOpenDocument: (Long) -> Unit,
     onOpenBackup: () -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -160,6 +161,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
                 actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        SymbolIcon(R.drawable.ic_settings, contentDescription = stringResource(R.string.settings))
+                    }
                     if (!state.libraryEmpty) {
                         IconButton(onClick = viewModel::toggleView) {
                             if (viewModel.gridView) {
