@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.andrearandazzo.papyrus.R
+import io.github.andrearandazzo.papyrus.syncStarterCategories
 import io.github.andrearandazzo.papyrus.data.ImportResult
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
@@ -62,6 +63,7 @@ class ShareActivity : ComponentActivity() {
             finish()
             return
         }
+        syncStarterCategories()
         setPapyrusContent {
             ShareScreen(viewModel, onClose = ::finish, onDone = { result ->
                 Toast.makeText(this, result.message(), Toast.LENGTH_SHORT).show()

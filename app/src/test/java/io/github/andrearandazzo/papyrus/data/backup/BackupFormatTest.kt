@@ -30,7 +30,7 @@ class BackupFormatTest {
     fun roundTripKeepsEverything() {
         val manifest = BackupFormat.parse(BackupFormat.toJson(listOf(car, dog), listOf(insurance, photo), 0))
 
-        assertEquals(listOf(BackupCategory(7, "Car", "car"), BackupCategory(8, "Dog", null)), manifest.categories)
+        assertEquals(listOf(BackupCategory(7, "Car", "car", null), BackupCategory(8, "Dog", null)), manifest.categories)
         assertEquals(
             BackupDocument(
                 title = "Polizza “auto” città",
@@ -49,9 +49,29 @@ class BackupFormatTest {
     }
 
     @Test
+    fun keepsStarterKeys() {
+        val starter = Category(id = 9, name = "Salute", starterKey = "health")
+        val manifest = BackupFormat.parse(BackupFormat.toJson(listOf(starter, dog), emptyList(), 0))
+        assertEquals(listOf("health", null), manifest.categories.map { it.starterKey })
+    }
+
+    @Test
+    fun ownCategoryNamedLikeAStarterStaysTheUsers() {
+        // "Car" without a starter key in a new backup is the user's own category, not a starter.
+        val manifest = BackupFormat.parse(BackupFormat.toJson(listOf(car), emptyList(), 0))
+        assertEquals(null, manifest.categories.single().starterKey)
+    }
+
+    @Test
+    fun recognizesStartersInBackupsMadeBeforeKeys() {
+        val old = """{"format":1,"categories":[{"id":1,"name":"Health"},{"id":2,"name":"Dog"}],"documents":[]}"""
+        assertEquals(listOf("health", null), BackupFormat.parse(old).categories.map { it.starterKey })
+    }
+
+    @Test
     fun readsBackupsMadeBeforeIcons() {
         val old = """{"format":1,"categories":[{"id":1,"name":"Car"}],"documents":[]}"""
-        assertEquals(listOf(BackupCategory(1, "Car", null)), BackupFormat.parse(old).categories)
+        assertEquals(listOf(BackupCategory(1, "Car", null, "car")), BackupFormat.parse(old).categories)
     }
 
     @Test

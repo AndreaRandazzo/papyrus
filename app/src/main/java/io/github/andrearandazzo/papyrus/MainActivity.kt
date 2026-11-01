@@ -8,6 +8,7 @@ import io.github.andrearandazzo.papyrus.ui.theme.setPapyrusContent
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        syncStarterCategories()
         setPapyrusContent { PapyrusNavHost() }
     }
 }

@@ -267,13 +267,11 @@
     <string name="scan_discard">Discard</string>
     <string name="scan_keep">Keep scanning</string>
 
-    <!-- Created on first launch; users can rename or delete them. -->
-    <string-array name="default_categories">
-        <item>Identity</item>
-        <item>Health</item>
-        <item>Home</item>
-        <item>Car</item>
-        <item>Work</item>
-        <item>Finance</item>
-    </string-array>
+    <!-- Starter categories, created on first launch. Until renamed they follow the app's language. -->
+    <string name="starter_identity">Identity</string>
+    <string name="starter_health">Health</string>
+    <string name="starter_home">Home</string>
+    <string name="starter_car">Car</string>
+    <string name="starter_work">Work</string>
+    <string name="starter_finance">Finance</string>
 </resources>
