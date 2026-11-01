@@ -1,8 +1,5 @@
 package io.github.andrearandazzo.papyrus.ui.backup
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
 import android.content.res.Resources
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -41,12 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.andrearandazzo.papyrus.R
@@ -57,8 +51,6 @@ import io.github.andrearandazzo.papyrus.ui.formatInstantDate
 import io.github.andrearandazzo.papyrus.ui.theme.Paper
 import java.time.LocalDate
 
-private const val LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
-private const val SOURCE_URL = "https://github.com/AndreaRandazzo/papyrus"
 
 /** Some file providers label ZIP files differently, so accept all the common types. */
 private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")
@@ -66,8 +58,7 @@ private val BACKUP_TYPES = arrayOf("application/zip", "application/x-zip-compres
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewModel.Factory)) {
-    val context = LocalContext.current
-    // Follows language changes, unlike context.resources.
+    // Follows language changes, unlike LocalContext.current.resources.
     val resources = LocalResources.current
     val hasDocuments by viewModel.hasDocuments.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -126,7 +117,6 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                About(context)
             }
         }
     }
@@ -254,59 +244,6 @@ private fun OutlinedCard(
             .then(if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier),
     ) {
         content()
-    }
-}
-
-@Composable
-private fun About(context: Context) {
-    val version = remember {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty()
-    }
-    Column {
-        SectionLabel(stringResource(R.string.about_papyrus), Modifier.padding(start = 4.dp, top = 16.dp, bottom = 4.dp))
-        AboutRow(R.drawable.ic_info, stringResource(R.string.about_version), version)
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        AboutRow(
-            R.drawable.ic_license,
-            stringResource(R.string.about_license),
-            stringResource(R.string.about_license_value),
-            trailing = R.drawable.ic_chevron_right,
-        ) { openLink(context, LICENSE_URL) }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        AboutRow(
-            R.drawable.ic_code,
-            stringResource(R.string.about_source),
-            stringResource(R.string.about_source_body),
-            trailing = R.drawable.ic_open_in_new,
-        ) { openLink(context, SOURCE_URL) }
-    }
-}
-
-@Composable
-private fun AboutRow(icon: Int, title: String, value: String, trailing: Int? = null, onClick: (() -> Unit)? = null) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-    ) {
-        SymbolIcon(icon, contentDescription = null)
-        Spacer(Modifier.width(16.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        trailing?.let { SymbolIcon(it, contentDescription = null, modifier = Modifier.size(20.dp)) }
-    }
-}
-
-/** Opens a web page in the user's browser; Papyrus itself never goes online. */
-private fun openLink(context: Context, url: String) {
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-    } catch (e: ActivityNotFoundException) {
-        // No browser installed: nothing sensible to do.
     }
 }
 

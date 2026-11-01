@@ -209,6 +209,28 @@
     <string name="about_source">Source code</string>
     <string name="about_source_body">View the project repository</string>
 
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme">Theme</string>
+    <string name="theme_system">Same as phone</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="language">Language</string>
+    <string name="language_system">Same as phone</string>
+    <!-- Language names are always written in their own language. -->
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_italian" translatable="false">Italiano</string>
+    <string name="settings_feedback">Help and feedback</string>
+    <string name="report_bug">Report a bug</string>
+    <string name="report_bug_body">Something doesn\'t work as it should</string>
+    <string name="request_feature">Request a feature</string>
+    <string name="request_feature_body">Suggest an idea to improve Papyrus</string>
+    <string name="send_email">Send an email</string>
+    <string name="feedback_email_subject">Papyrus feedback</string>
+    <string name="feedback_privacy">Reports open on GitHub in your browser, with the app version, Android version and phone model already filled in. Nothing is sent until you submit it. Never attach personal documents.</string>
+    <string name="no_app_to_open_link">No app on this phone can open this link</string>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identity</item>

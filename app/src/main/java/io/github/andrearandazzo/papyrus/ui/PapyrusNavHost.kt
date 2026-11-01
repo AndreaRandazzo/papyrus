@@ -35,11 +35,13 @@ import io.github.andrearandazzo.papyrus.ui.detail.DocumentDetailScreen
 import io.github.andrearandazzo.papyrus.ui.expiring.ExpiringScreen
 import io.github.andrearandazzo.papyrus.ui.expiring.ExpiringViewModel
 import io.github.andrearandazzo.papyrus.ui.home.HomeScreen
+import io.github.andrearandazzo.papyrus.ui.settings.SettingsScreen
 
 private object Routes {
     const val DOCUMENT_ID = "documentId"
     const val DOCUMENT = "document/{$DOCUMENT_ID}"
     fun document(id: Long) = "document/$id"
+    const val SETTINGS = "settings"
 }
 
 /** The four destinations of the bottom navigation bar. */
@@ -83,6 +85,7 @@ fun PapyrusNavHost() {
                 HomeScreen(
                     onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
                     onOpenBackup = { navController.switchTo(Tab.BACKUP) },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
             }
             composable(Tab.EXPIRING.route) {
@@ -90,6 +93,7 @@ fun PapyrusNavHost() {
             }
             composable(Tab.CATEGORIES.route) { CategoriesScreen() }
             composable(Tab.BACKUP.route) { BackupScreen() }
+            composable(Routes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
             composable(
                 Routes.DOCUMENT,
                 arguments = listOf(navArgument(Routes.DOCUMENT_ID) { type = NavType.LongType }),
