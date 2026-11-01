@@ -41,11 +41,12 @@ open it on a computer without Papyrus. **It isn't encrypted**, so keep it somewh
 
 ## Install
 
-- **F-Droid:** coming soon.
-- **GitHub:** download the APK from [Releases](https://github.com/AndreaRandazzo/papyrus/releases).
+Download the latest `papyrus-x.y.z.apk` from [Releases](https://github.com/AndreaRandazzo/papyrus/releases)
+and open it on your phone (Android 8.0 or newer). Android will ask you to allow installing apps
+from your browser or file manager the first time.
 
-The F-Droid and GitHub versions are signed with different keys, so switching between them
-requires uninstalling first. Make a backup before you do.
+To get updates automatically, you can track this repository with
+[Obtainium](https://github.com/ImranR98/Obtainium), a free app that installs releases straight from GitHub.
 
 ## Build from source
 
