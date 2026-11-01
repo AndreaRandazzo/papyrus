@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Papyrus logo, single color for themed icons: the plant only. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.86"
+        android:scaleY="0.86">
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L31.45,43.79" />
+        <path android:fillColor="#FF000000" android:pathData="M28.85,43.79a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L35.09,37.22" />
+        <path android:fillColor="#FF000000" android:pathData="M32.49,37.22a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L40.58,32.10" />
+        <path android:fillColor="#FF000000" android:pathData="M37.98,32.10a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L47.38,28.93" />
+        <path android:fillColor="#FF000000" android:pathData="M44.78,28.93a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L54.84,28.01" />
+        <path android:fillColor="#FF000000" android:pathData="M52.24,28.01a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L62.21,29.45" />
+        <path android:fillColor="#FF000000" android:pathData="M59.61,29.45a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L68.78,33.09" />
+        <path android:fillColor="#FF000000" android:pathData="M66.18,33.09a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L73.90,38.58" />
+        <path android:fillColor="#FF000000" android:pathData="M71.30,38.58a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="2.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L77.07,45.38" />
+        <path android:fillColor="#FF000000" android:pathData="M74.47,45.38a2.60,2.60 0 1,0 5.20,0a2.60,2.60 0 1,0 -5.20,0Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="3.6" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,52L54,82" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,82C47,81 42,77 39,72" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M54,82C61,81 66,77 69,72" />
+    </group>
+</vector>
