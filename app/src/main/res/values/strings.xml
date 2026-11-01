@@ -231,6 +231,14 @@
     <string name="feedback_privacy">Reports open on GitHub in your browser, with the app version, Android version and phone model already filled in. Nothing is sent until you submit it. Never attach personal documents.</string>
     <string name="no_app_to_open_link">No app on this phone can open this link</string>
 
+    <!-- Share to Papyrus -->
+    <string name="share_title">Save to Papyrus</string>
+    <string name="share_nothing">Nothing to save: Papyrus accepts PDF, Word files and images</string>
+    <plurals name="share_files">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identity</item>

@@ -3,13 +3,18 @@ package io.github.andrearandazzo.papyrus.data
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import android.webkit.MimeTypeMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+
+/** Result of importing several files at once. */
+data class ImportResult(val imported: Int, val failed: Int)
 
 /**
  * Single owner of documents: keeps the stored files and the database rows in sync.
@@ -36,15 +41,42 @@ class DocumentRepository(
     fun newStorageFile(extension: String): File =
         File(storageDir, UUID.randomUUID().toString() + if (extension.isEmpty()) "" else ".$extension")
 
+    /** The file's name as the app that provides it reports it, e.g. "Car insurance.pdf". */
+    suspend fun displayName(uri: Uri): String = withContext(Dispatchers.IO) {
+        try {
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+        } catch (e: Exception) {
+            null // Some providers refuse queries; the file can usually still be read.
+        } ?: "Document"
+    }
+
+    /**
+     * Imports each file into [categoryId]. A file that can't be read is skipped and counted,
+     * so one bad file doesn't stop the rest.
+     */
+    suspend fun importAll(uris: List<Uri>, categoryId: Long?): ImportResult {
+        var failed = 0
+        for (uri in uris) {
+            try {
+                import(uri, categoryId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Import failed for $uri", e)
+                failed++
+            }
+        }
+        return ImportResult(imported = uris.size - failed, failed = failed)
+    }
+
     /**
      * Copies the file behind [uri] into private storage and records it in [categoryId].
      * The copy means the document survives even if the original is deleted.
      */
     suspend fun import(uri: Uri, categoryId: Long?): Document = withContext(Dispatchers.IO) {
         val resolver = context.contentResolver
-        val displayName = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-            ?: "Document"
+        val displayName = displayName(uri)
         val mimeType = resolver.getType(uri) ?: "application/octet-stream"
         val extension = displayName.substringAfterLast('.', missingDelimiterValue = "")
             .ifEmpty { MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType).orEmpty() }
@@ -93,4 +125,8 @@ class DocumentRepository(
 
     private fun safeFileName(title: String): String =
         title.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_").trim().take(100).ifEmpty { "document" }
+
+    private companion object {
+        const val TAG = "DocumentRepository"
+    }
 }
