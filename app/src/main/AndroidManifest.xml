@@ -18,6 +18,22 @@
             </intent-filter>
         </activity>
 
+        <!-- "Share → Papyrus" from other apps. Not in recents: after saving, the user is back in that app. -->
+        <activity
+            android:name=".ui.share.ShareActivity"
+            android:excludeFromRecents="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
         <!-- Lets viewer and share-target apps read a document we explicitly hand them. -->
         <provider
             android:name="androidx.core.content.FileProvider"

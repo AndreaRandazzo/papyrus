@@ -1,7 +1,6 @@
 package io.github.andrearandazzo.papyrus.ui.home
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,6 +16,7 @@ import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
+import io.github.andrearandazzo.papyrus.data.ImportResult
 import io.github.andrearandazzo.papyrus.data.UserPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -32,10 +32,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
-import kotlin.coroutines.cancellation.CancellationException
-
-/** Result of an import, shown once as a snackbar. */
-data class ImportResult(val imported: Int, val failed: Int)
 
 data class HomeState(
     /** Documents matching [filter], in its sort order. */
@@ -128,28 +124,16 @@ class HomeViewModel(
         val categoryId = state.value.filter.categoryId
         viewModelScope.launch {
             _importing.value = true
-            var failed = 0
-            try {
-                for (uri in uris) {
-                    try {
-                        documentRepository.import(uri, categoryId)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Import failed for $uri", e)
-                        failed++
-                    }
-                }
+            val result = try {
+                documentRepository.importAll(uris, categoryId)
             } finally {
                 _importing.value = false
             }
-            _importResults.send(ImportResult(imported = uris.size - failed, failed = failed))
+            _importResults.send(result)
         }
     }
 
     companion object {
-        private const val TAG = "HomeViewModel"
-
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as PapyrusApp
