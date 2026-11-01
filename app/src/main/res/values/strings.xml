@@ -239,6 +239,34 @@
         <item quantity="other">%d files</item>
     </plurals>
 
+    <!-- Add menu and scanning -->
+    <string name="add_scan">Scan with camera</string>
+    <string name="add_scan_body">Photograph a paper document, one or more pages</string>
+    <string name="add_files">Choose files</string>
+    <string name="add_files_body">PDF, Word files or photos already on the phone</string>
+    <string name="scan_title">Scan</string>
+    <string name="scan_empty_title">Photograph your document</string>
+    <string name="scan_empty_body">Lay it flat in good light. You can add more pages, rotate and reorder them before saving.</string>
+    <string name="scan_take_photo">Take a photo</string>
+    <string name="scan_add_page">Add a page</string>
+    <plurals name="scan_pages">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <string name="scan_page_number">Page %d</string>
+    <string name="scan_rotate">Rotate</string>
+    <string name="scan_move_up">Move up</string>
+    <string name="scan_move_down">Move down</string>
+    <string name="scan_save">Save as PDF</string>
+    <string name="scan_default_title">Scan %s</string>
+    <string name="scan_saved">Scan saved</string>
+    <string name="scan_failed">The scan could not be saved</string>
+    <string name="scan_no_camera">No camera app on this phone</string>
+    <string name="scan_discard_title">Discard this scan?</string>
+    <string name="scan_discard_body">The photos you took will be deleted.</string>
+    <string name="scan_discard">Discard</string>
+    <string name="scan_keep">Keep scanning</string>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identity</item>

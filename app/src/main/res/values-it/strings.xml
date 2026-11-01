@@ -247,6 +247,35 @@
         <item quantity="other">%d file</item>
     </plurals>
 
+    <!-- Add menu and scanning -->
+    <string name="add_scan">Scansiona con la fotocamera</string>
+    <string name="add_scan_body">Fotografa un documento cartaceo, una o più pagine</string>
+    <string name="add_files">Scegli file</string>
+    <string name="add_files_body">PDF, file Word o foto già sul telefono</string>
+    <string name="scan_title">Scansiona</string>
+    <string name="scan_empty_title">Fotografa il documento</string>
+    <string name="scan_empty_body">Appoggialo su una superficie piana e ben illuminata. Prima di salvare puoi aggiungere pagine, ruotarle e riordinarle.</string>
+    <string name="scan_take_photo">Scatta una foto</string>
+    <string name="scan_add_page">Aggiungi una pagina</string>
+    <plurals name="scan_pages">
+        <item quantity="one">%d pagina</item>
+        <item quantity="many">%d pagine</item>
+        <item quantity="other">%d pagine</item>
+    </plurals>
+    <string name="scan_page_number">Pagina %d</string>
+    <string name="scan_rotate">Ruota</string>
+    <string name="scan_move_up">Sposta su</string>
+    <string name="scan_move_down">Sposta giù</string>
+    <string name="scan_save">Salva come PDF</string>
+    <string name="scan_default_title">Scansione %s</string>
+    <string name="scan_saved">Scansione salvata</string>
+    <string name="scan_failed">Impossibile salvare la scansione</string>
+    <string name="scan_no_camera">Nessuna app fotocamera su questo telefono</string>
+    <string name="scan_discard_title">Eliminare questa scansione?</string>
+    <string name="scan_discard_body">Le foto scattate verranno eliminate.</string>
+    <string name="scan_discard">Elimina</string>
+    <string name="scan_keep">Continua</string>
+
     <!-- Created on first launch; users can rename or delete them. -->
     <string-array name="default_categories">
         <item>Identità</item>

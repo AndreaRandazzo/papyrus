@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Only the readable-named copies made for opening/sharing are exposed, never the stored originals. -->
+<!-- Exposed: readable-named copies for opening/sharing, and the scan folder the camera app writes
+     photos into. Never the stored originals. -->
 <paths>
     <cache-path name="shared" path="shared/" />
+    <cache-path name="scan" path="scan/" />
 </paths>
