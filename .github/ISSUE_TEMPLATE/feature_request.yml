@@ -1,0 +1,23 @@
+name: Richiedi una funzione / Request a feature
+description: Un'idea per migliorare Papyrus. / An idea to improve Papyrus.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Cosa vorresti? / What would you like?
+      description: Descrivi la funzione. / Describe the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Perché ti sarebbe utile? / Why would it help you?
+      description: Un esempio concreto aiuta molto. / A concrete example helps a lot.
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Versione di Papyrus / Papyrus version
+      placeholder: "1.1.0"
