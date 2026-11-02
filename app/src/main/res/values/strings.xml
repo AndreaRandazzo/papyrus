@@ -271,6 +271,19 @@
     <string name="unlock">Unlock</string>
     <string name="unlock_prompt_title">Unlock Papyrus</string>
     <string name="app_lock_confirm_title">Turn on app lock</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="expiry_reminders">Expiry reminders</string>
+    <string name="expiry_reminders_body">Notify 30 and 7 days before and on the day</string>
+    <string name="reminders_channel">Expiry reminders</string>
+    <plurals name="reminder_expires_in">
+        <item quantity="one">%1$s expires tomorrow</item>
+        <item quantity="other">%1$s expires in %2$d days</item>
+    </plurals>
+    <string name="reminder_expires_today">%s expires today</string>
+    <string name="reminder_expired">%s has expired</string>
+    <string name="reminder_body">Open it in Papyrus to renew it or update the date.</string>
+    <string name="reminder_public_title">A document is expiring</string>
+    <string name="reminders_denied">Allow notifications for Papyrus in your phone\'s settings to get reminders.</string>
     <string name="language">Language</string>
     <string name="language_system">Same as phone</string>
     <!-- Language names are always written in their own language. -->

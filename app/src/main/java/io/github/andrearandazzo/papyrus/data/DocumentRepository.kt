@@ -36,6 +36,9 @@ class DocumentRepository(
 
     fun observe(id: Long): Flow<Document?> = dao.observe(id)
 
+    /** Every document, once (for work outside a screen, like expiry reminders). */
+    suspend fun all(): List<Document> = dao.getAll()
+
     suspend fun update(document: Document) = dao.update(document)
 
     /** The stored file. Treat it as read-only. */

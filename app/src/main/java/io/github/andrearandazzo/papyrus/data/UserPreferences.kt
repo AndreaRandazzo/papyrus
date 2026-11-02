@@ -78,6 +78,21 @@ class UserPreferences(context: Context) {
 
     fun setLockTimeout(timeout: LockTimeout) = store(KEY_LOCK_TIMEOUT, timeout, _lockTimeout)
 
+    private val _expiryReminders = MutableStateFlow(prefs.getBoolean(KEY_REMINDERS, false))
+
+    /** Settings > Expiry reminders. Change it through ExpiryReminders, which also sets the alarm. */
+    val expiryReminders: StateFlow<Boolean> = _expiryReminders.asStateFlow()
+
+    fun setExpiryReminders(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_REMINDERS, enabled) }
+        _expiryReminders.value = enabled
+    }
+
+    /** Reminders already shown, so each is shown once (see ReminderPlanner). */
+    var sentReminders: Set<String>
+        get() = prefs.getStringSet(KEY_SENT_REMINDERS, emptySet()).orEmpty().toSet()
+        set(value) = prefs.edit { putStringSet(KEY_SENT_REMINDERS, value) }
+
     /** An unknown stored value (e.g. from a newer version) falls back to [default]. */
     private inline fun <reified T : Enum<T>> stored(key: String, default: T): T =
         enumValues<T>().firstOrNull { it.name == prefs.getString(key, null) } ?: default
@@ -96,6 +111,8 @@ class UserPreferences(context: Context) {
         const val KEY_TEXT_SIZE = "text_size"
         const val KEY_APP_LOCK = "app_lock"
         const val KEY_LOCK_TIMEOUT = "lock_timeout"
+        const val KEY_REMINDERS = "expiry_reminders"
+        const val KEY_SENT_REMINDERS = "sent_reminders"
         const val KEY_SORT_FIELD = "sort_field"
         const val KEY_SORT_ASCENDING = "sort_ascending"
     }

@@ -14,6 +14,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -64,8 +65,15 @@ private enum class Tab(
 
 /** All screens of the app, the bottom bar, and how to move between them. */
 @Composable
-fun PapyrusNavHost() {
+fun PapyrusNavHost(documentToOpen: Long? = null, onDocumentOpened: () -> Unit = {}) {
     val navController = rememberNavController()
+    // Tapping an expiry reminder opens that document's details.
+    LaunchedEffect(documentToOpen) {
+        documentToOpen?.let {
+            navController.navigate(Routes.document(it)) { launchSingleTop = true }
+            onDocumentOpened()
+        }
+    }
     // Feeds the Expiring tab's badge with the number of urgent documents.
     val expiring: ExpiringViewModel = viewModel(factory = ExpiringViewModel.Factory)
     val expiringState by expiring.state.collectAsStateWithLifecycle()

@@ -1,9 +1,12 @@
 package io.github.andrearandazzo.papyrus.ui.settings
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -57,6 +60,7 @@ import io.github.andrearandazzo.papyrus.data.TextSize
 import io.github.andrearandazzo.papyrus.data.ThemeMode
 import io.github.andrearandazzo.papyrus.lock.DeviceAuth
 import io.github.andrearandazzo.papyrus.lock.rememberDeviceAuth
+import io.github.andrearandazzo.papyrus.reminders.ExpiryReminders
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
 import kotlinx.coroutines.launch
@@ -66,19 +70,26 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val preferences = (context.applicationContext as PapyrusApp).preferences
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val themeMode by preferences.themeMode.collectAsStateWithLifecycle()
     val palette by preferences.palette.collectAsStateWithLifecycle()
     val textSize by preferences.textSize.collectAsStateWithLifecycle()
     val appLock by preferences.appLock.collectAsStateWithLifecycle()
     val lockTimeout by preferences.lockTimeout.collectAsStateWithLifecycle()
+    val reminders by preferences.expiryReminders.collectAsStateWithLifecycle()
+    val remindersDenied = stringResource(R.string.reminders_denied)
+    val enableReminders = { scope.launch { ExpiryReminders.enable(context) } }
+    // Android 13+ asks before showing notifications; only when reminders are turned on.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) enableReminders() else scope.launch { snackbarHostState.showSnackbar(remindersDenied) }
+    }
     val noScreenLock = stringResource(R.string.app_lock_no_screen_lock)
     // Turning the lock on first proves the phone can unlock it, so nobody gets locked out.
     val confirmLock = rememberDeviceAuth(stringResource(R.string.app_lock_confirm_title)) {
         preferences.setAppLock(true)
     }
     val info = remember { deviceInfo(context) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val noBrowser = stringResource(R.string.no_app_to_open_link)
     var dialog by remember { mutableStateOf<String?>(null) }
 
@@ -138,6 +149,20 @@ fun SettingsScreen(onBack: () -> Unit) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 SettingsRow(R.drawable.ic_timer, stringResource(R.string.lock_after), stringResource(lockTimeout.label())) {
                     dialog = "lockTimeout"
+                }
+            }
+
+            Section(stringResource(R.string.settings_notifications))
+            SwitchRow(
+                R.drawable.ic_bell,
+                stringResource(R.string.expiry_reminders),
+                stringResource(R.string.expiry_reminders_body),
+                reminders,
+            ) { on ->
+                when {
+                    !on -> ExpiryReminders.disable(context)
+                    ExpiryReminders.canNotify(context) -> enableReminders()
+                    else -> notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
 

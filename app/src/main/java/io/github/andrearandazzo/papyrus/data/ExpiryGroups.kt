@@ -24,7 +24,7 @@ data class ExpiryGroups(
 
         fun of(documents: List<Document>, today: LocalDate): ExpiryGroups {
             val dated = documents.mapNotNull { document ->
-                document.expiresAt?.let { document to ChronoUnit.DAYS.between(today, utcDay(it)) }
+                document.expiresAt?.let { document to daysLeft(it, today) }
             }.sortedBy { (_, days) -> days }
             return ExpiryGroups(
                 expired = dated.filter { (_, days) -> days < 0 }.map { it.first }.reversed(),
@@ -32,6 +32,9 @@ data class ExpiryGroups(
                 later = dated.filter { (_, days) -> days > SOON_DAYS }.map { it.first },
             )
         }
+
+        /** Days from [today] to the expiry day: 0 is today, negative is already expired. */
+        fun daysLeft(expiresAt: Long, today: LocalDate): Long = ChronoUnit.DAYS.between(today, utcDay(expiresAt))
 
         /** Expiry dates are stored as UTC midnight of the chosen day. */
         private fun utcDay(millis: Long): LocalDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()

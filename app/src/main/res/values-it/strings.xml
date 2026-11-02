@@ -287,6 +287,20 @@
     <string name="unlock">Sblocca</string>
     <string name="unlock_prompt_title">Sblocca Papyrus</string>
     <string name="app_lock_confirm_title">Attiva il blocco app</string>
+    <string name="settings_notifications">Notifiche</string>
+    <string name="expiry_reminders">Promemoria scadenze</string>
+    <string name="expiry_reminders_body">Avvisa 30 e 7 giorni prima e il giorno stesso</string>
+    <string name="reminders_channel">Promemoria scadenze</string>
+    <plurals name="reminder_expires_in">
+        <item quantity="one">%1$s scade domani</item>
+        <item quantity="many">%1$s scade tra %2$d giorni</item>
+        <item quantity="other">%1$s scade tra %2$d giorni</item>
+    </plurals>
+    <string name="reminder_expires_today">%s scade oggi</string>
+    <string name="reminder_expired">%s è scaduto</string>
+    <string name="reminder_body">Aprilo in Papyrus per rinnovarlo o aggiornare la data.</string>
+    <string name="reminder_public_title">Un documento è in scadenza</string>
+    <string name="reminders_denied">Consenti le notifiche di Papyrus nelle impostazioni del telefono per ricevere i promemoria.</string>
     <string name="language">Lingua</string>
     <string name="language_system">Come il telefono</string>
     <string name="settings_feedback">Aiuto e feedback</string>

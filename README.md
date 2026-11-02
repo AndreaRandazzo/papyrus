@@ -21,8 +21,10 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 - **Everything stays on your phone.** No account, no cloud, no ads, no tracking.
 - **No internet, no storage access.** Papyrus has no internet permission and can't read your
   storage. It only sees the files you pick in the system file picker, and it hands a single file
-  to another app only when you tap Open or Share. Its one permission, `USE_BIOMETRIC`, lets the
-  optional app lock show Android's fingerprint / face prompt; Android grants it without asking.
+  to another app only when you tap Open or Share. Its only permissions serve optional features:
+  `USE_BIOMETRIC` shows Android's fingerprint / face prompt for the app lock (granted without
+  asking); `POST_NOTIFICATIONS` (asked only when you turn expiry reminders on) and
+  `RECEIVE_BOOT_COMPLETED` (to set the daily reminder check again after a restart).
 
 ## Features
 
@@ -33,6 +35,7 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 - Categories with 32 icons to choose from; browse them as folders, or as chips above a list or grid
 - Optional app lock with your fingerprint, face or phone PIN; the recent-apps screen shows a blank card
 - Notes and expiry dates; the **Expiring** tab shows what has expired or expires within 30 days
+- Optional expiry reminders: a notification 30 and 7 days before and on the day
 - Search titles, notes and categories (case and accents ignored), filter by type and date added,
   sort by date, title or expiry in either direction
 - Previews of PDF pages and photos; list, grid or folders view
