@@ -232,6 +232,9 @@ fun HomeScreen(
                 FirstLaunch(onAdd = addDocuments, onRestore = onOpenBackup, busy = importing)
                 return@Column
             }
+            // One search field for every view, kept outside the branches below: if each branch had its
+            // own, typing the first letter in Folders would swap in a new field and close the keyboard.
+            if (openFolder == null) SearchField(viewModel.query, viewModel::search)
             when {
                 openFolder != null -> {
                     FolderToolbar(
@@ -243,12 +246,8 @@ fun HomeScreen(
                     Documents(state, grid = false, actions, emptyCategory = openFolder.documentCount == 0)
                 }
                 // The folder overview; typing a search shows matching documents from every folder.
-                inFolders && viewModel.query.isBlank() -> {
-                    SearchField(viewModel.query, viewModel::search)
-                    FolderGrid(state.folders, onOpen = viewModel::openFolder)
-                }
+                inFolders && viewModel.query.isBlank() -> FolderGrid(state.folders, onOpen = viewModel::openFolder)
                 else -> {
-                    SearchField(viewModel.query, viewModel::search)
                     if (!inFolders) {
                         FilterRow(
                             categories = state.categories,
