@@ -53,6 +53,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -83,6 +84,7 @@ import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentKind
 import io.github.andrearandazzo.papyrus.data.ImportResult
+import io.github.andrearandazzo.papyrus.data.SortField
 import io.github.andrearandazzo.papyrus.data.SortOrder
 import io.github.andrearandazzo.papyrus.ui.DocumentIntents
 import io.github.andrearandazzo.papyrus.ui.DocumentTile
@@ -213,10 +215,13 @@ fun HomeScreen(
                         onSort = { order -> viewModel.updateFilter { it.copy(sort = order) } },
                     )
                     val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
-                    if (viewModel.gridView) {
-                        DocumentGrid(state.documents, categoryNames, actions)
-                    } else {
-                        DocumentList(state.documents, categoryNames, actions)
+                    // A new sort order starts again from the top instead of following the visible item.
+                    key(state.filter.sort) {
+                        if (viewModel.gridView) {
+                            DocumentGrid(state.documents, categoryNames, actions)
+                        } else {
+                            DocumentList(state.documents, categoryNames, actions)
+                        }
                     }
                 }
                 // Only a category is selected: suggest adding documents to it.
@@ -381,7 +386,10 @@ private fun CategoryChip(label: String, icon: Int?, selected: Boolean, onClick: 
     )
 }
 
-/** "6 DOCUMENTS" on the left, the sort order as a small menu on the right. */
+/**
+ * "6 DOCUMENTS" on the left; on the right the sort order as a small menu of fields, and an arrow
+ * that reverses it.
+ */
 @Composable
 private fun ResultsHeader(count: Int, sort: SortOrder, onSort: (SortOrder) -> Unit) {
     var showSort by remember { mutableStateOf(false) }
@@ -389,12 +397,12 @@ private fun ResultsHeader(count: Int, sort: SortOrder, onSort: (SortOrder) -> Un
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+            .padding(start = 20.dp, end = 4.dp, top = 8.dp),
     ) {
         SectionLabel(pluralStringResource(R.plurals.document_count, count, count), Modifier.weight(1f))
         Box {
             TextButton(onClick = { showSort = true }) {
-                Text(stringResource(sort.headerLabel()))
+                Text(stringResource(sort.label()))
                 SymbolIcon(R.drawable.ic_arrow_drop_down, contentDescription = null)
             }
             DropdownMenu(
@@ -403,16 +411,26 @@ private fun ResultsHeader(count: Int, sort: SortOrder, onSort: (SortOrder) -> Un
                 shape = MaterialTheme.shapes.medium,
                 containerColor = MaterialTheme.colorScheme.surfaceContainer,
             ) {
-                SortOrder.entries.forEach { order ->
+                SortField.entries.forEach { field ->
                     DropdownMenuItem(
-                        text = { Text(stringResource(order.headerLabel())) },
+                        text = { Text(stringResource(field.label())) },
                         trailingIcon = {
-                            if (order == sort) SymbolIcon(R.drawable.ic_check, contentDescription = null)
+                            if (field == sort.field) SymbolIcon(R.drawable.ic_check, contentDescription = null)
                         },
-                        onClick = { showSort = false; onSort(order) },
+                        onClick = {
+                            showSort = false
+                            if (field != sort.field) onSort(SortOrder(field))
+                        },
                     )
                 }
             }
+        }
+        IconButton(onClick = { onSort(sort.reversed()) }) {
+            SymbolIcon(
+                if (sort.ascending) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down,
+                contentDescription = stringResource(R.string.sort_reverse),
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
@@ -649,13 +667,6 @@ fun DocumentKind.label() = when (this) {
     DocumentKind.WORD -> R.string.kind_word
     DocumentKind.IMAGE -> R.string.kind_image
     DocumentKind.OTHER -> R.string.kind_other
-}
-
-private fun SortOrder.headerLabel() = when (this) {
-    SortOrder.NEWEST -> R.string.sort_recently_added
-    SortOrder.OLDEST -> R.string.sort_oldest
-    SortOrder.TITLE -> R.string.sort_title
-    SortOrder.EXPIRY -> R.string.sort_expiry
 }
 
 private fun ImportResult.text(resources: Resources): String =

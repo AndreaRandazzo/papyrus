@@ -73,10 +73,32 @@ class DocumentFilterTest {
         assertEquals(listOf(3L), ids(DocumentFilter(addedFrom = LocalDate.of(2026, 10, 11))))
     }
 
+    private fun sorted(field: SortField, ascending: Boolean) =
+        ids(DocumentFilter(sort = SortOrder(field, ascending)))
+
     @Test
-    fun sortsByTitleAndByExpiryWithMissingExpiryLast() {
-        assertEquals(listOf(2L, 3L, 1L), ids(DocumentFilter(sort = SortOrder.TITLE)))
-        assertEquals(listOf(2L, 1L, 3L), ids(DocumentFilter(sort = SortOrder.EXPIRY)))
-        assertEquals(listOf(1L, 2L, 3L), ids(DocumentFilter(sort = SortOrder.OLDEST)))
+    fun sortsByDateAddedBothWays() {
+        assertEquals(listOf(3L, 2L, 1L), sorted(SortField.ADDED, ascending = false))
+        assertEquals(listOf(1L, 2L, 3L), sorted(SortField.ADDED, ascending = true))
+    }
+
+    @Test
+    fun sortsByTitleBothWays() {
+        assertEquals(listOf(2L, 3L, 1L), sorted(SortField.TITLE, ascending = true))
+        assertEquals(listOf(1L, 3L, 2L), sorted(SortField.TITLE, ascending = false))
+    }
+
+    @Test
+    fun sortsByExpiryBothWaysWithMissingExpiryAlwaysLast() {
+        assertEquals(listOf(2L, 1L, 3L), sorted(SortField.EXPIRY, ascending = true))
+        assertEquals(listOf(1L, 2L, 3L), sorted(SortField.EXPIRY, ascending = false))
+    }
+
+    @Test
+    fun choosingAFieldStartsInItsNaturalDirection() {
+        assertEquals(false, SortOrder(SortField.ADDED).ascending) // newest first
+        assertEquals(true, SortOrder(SortField.TITLE).ascending) // A–Z
+        assertEquals(true, SortOrder(SortField.EXPIRY).ascending) // soonest first
+        assertEquals(SortOrder(SortField.TITLE, ascending = false), SortOrder(SortField.TITLE).reversed())
     }
 }

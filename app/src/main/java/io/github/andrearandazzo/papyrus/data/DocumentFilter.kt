@@ -7,7 +7,24 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 
-enum class SortOrder { NEWEST, OLDEST, TITLE, EXPIRY }
+/** What documents are sorted by. [ascendingFirst] is the direction picked when the field is chosen. */
+enum class SortField(val ascendingFirst: Boolean) {
+    /** Import date: newest first. */
+    ADDED(false),
+    /** Title: A–Z. */
+    TITLE(true),
+    /** Expiry date: soonest first. Documents without one always go last. */
+    EXPIRY(true),
+}
+
+data class SortOrder(val field: SortField = SortField.ADDED, val ascending: Boolean = field.ascendingFirst) {
+    /** The same field in the other direction. */
+    fun reversed() = copy(ascending = !ascending)
+
+    companion object {
+        val DEFAULT = SortOrder()
+    }
+}
 
 /**
  * What the user is looking for. Pure Kotlin, so the rules are easy to unit test.
@@ -22,7 +39,7 @@ data class DocumentFilter(
     /** Import day range, both ends included; null means open-ended. */
     val addedFrom: LocalDate? = null,
     val addedTo: LocalDate? = null,
-    val sort: SortOrder = SortOrder.NEWEST,
+    val sort: SortOrder = SortOrder.DEFAULT,
 ) {
     /** How many filters are set in the filters panel (search and category are shown elsewhere). */
     val panelFilterCount: Int
@@ -62,13 +79,17 @@ data class DocumentFilter(
         return terms.all { it in searchable }
     }
 
-    private fun comparator(): Comparator<Document> = when (sort) {
-        SortOrder.NEWEST -> compareByDescending { it.importedAt }
-        SortOrder.OLDEST -> compareBy { it.importedAt }
-        SortOrder.TITLE -> compareBy(Collator.getInstance()) { it.title }
-        // Soonest expiry first; documents without one go last.
-        SortOrder.EXPIRY -> compareBy<Document, Long?>(nullsLast()) { it.expiresAt }
-            .thenByDescending { it.importedAt }
+    private fun comparator(): Comparator<Document> {
+        fun <T> directed(order: Comparator<T>) = if (sort.ascending) order else order.reversed()
+        val newestFirst = compareByDescending<Document> { it.importedAt }
+        return when (sort.field) {
+            SortField.ADDED -> directed(compareBy { it.importedAt })
+            SortField.TITLE -> compareBy(directed(Collator.getInstance())) { it: Document -> it.title }
+                .then(newestFirst)
+            // Documents without an expiry date go last in both directions.
+            SortField.EXPIRY -> compareBy<Document, Long?>(nullsLast(directed(naturalOrder()))) { it.expiresAt }
+                .then(newestFirst)
+        }
     }
 
     private companion object {
