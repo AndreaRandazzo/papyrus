@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.andrearandazzo.papyrus.PapyrusApp
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.CategoryRepository
+import io.github.andrearandazzo.papyrus.data.Corners
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
 import io.github.andrearandazzo.papyrus.data.PdfMaker
 import io.github.andrearandazzo.papyrus.data.ScanPage
@@ -37,6 +38,8 @@ data class ScanState(
     val categoryId: Long? = null,
     val categories: List<Category> = emptyList(),
     val saving: Boolean = false,
+    /** Page whose crop editor is open, or null. */
+    val cropIndex: Int? = null,
 )
 
 /**
@@ -51,13 +54,17 @@ class ScanViewModel(
 ) : ViewModel() {
 
     private val sessionDir = File(
-        saved.get<String>(KEY_SESSION) ?: File(app.cacheDir, "scan/${UUID.randomUUID()}").path.also {
-            saved[KEY_SESSION] = it
+        saved.get<String>(KEY_SESSION) ?: run {
+            // A new scan: photos left by scans that never finished (app closed mid-scan) can go.
+            File(app.cacheDir, "scan").listFiles()?.forEach { it.deleteRecursively() }
+            File(app.cacheDir, "scan/${UUID.randomUUID()}").path.also { saved[KEY_SESSION] = it }
         },
     ).apply { mkdirs() }
 
     private val pagePaths = saved.getStateFlow(KEY_PATHS, emptyList<String>())
     private val pageRotations = saved.getStateFlow(KEY_ROTATIONS, emptyList<Int>())
+    private val pageCorners = saved.getStateFlow(KEY_CORNERS, emptyList<String>())
+    private val cropIndex = saved.getStateFlow<Int?>(KEY_CROP_INDEX, null)
     private val title = saved.getStateFlow(KEY_TITLE, "")
     private val categoryId = saved.getStateFlow<Long?>(KEY_CATEGORY, null)
     private val saving = saved.getStateFlow(KEY_SAVING, false)
@@ -71,15 +78,17 @@ class ScanViewModel(
     }
 
     val state: StateFlow<ScanState> = combine(
-        combine(pagePaths, pageRotations) { paths, rotations ->
-            paths.mapIndexed { i, path -> ScanPage(path, rotations.getOrElse(i) { 0 }) }
+        combine(pagePaths, pageRotations, pageCorners) { paths, rotations, corners ->
+            paths.mapIndexed { i, path ->
+                ScanPage(path, rotations.getOrElse(i) { 0 }, corners.getOrNull(i)?.let(Corners::decode))
+            }
         },
         title,
         categoryId,
         categories.categories,
-        saving,
-    ) { pages, title, categoryId, categories, saving ->
-        ScanState(pages, title, categoryId, categories, saving)
+        combine(saving, cropIndex, ::Pair),
+    ) { pages, title, categoryId, categories, (saving, cropIndex) ->
+        ScanState(pages, title, categoryId, categories, saving, cropIndex?.takeIf { it in pages.indices })
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ScanState())
 
     /** Whether the camera was opened automatically once; true after the first page request. */
@@ -100,19 +109,32 @@ class ScanViewModel(
         saved[KEY_PENDING] = null
         val file = File(pending)
         if (taken && file.length() > 0) {
-            setPages(state.value.pages + ScanPage(pending))
+            val pages = currentPages()
+            setPages(pages + ScanPage(pending))
+            // Straight to cropping, like a scanner app; "Done" without changes keeps the whole photo.
+            saved[KEY_CROP_INDEX] = pages.size
         } else {
             file.delete()
         }
     }
 
-    fun rotate(index: Int) = setPages(ScanPages.rotate(state.value.pages, index))
+    fun rotate(index: Int) = setPages(ScanPages.rotate(currentPages(), index))
 
-    fun move(index: Int, delta: Int) = setPages(ScanPages.move(state.value.pages, index, delta))
+    fun startCrop(index: Int) {
+        saved[KEY_CROP_INDEX] = index
+    }
+
+    fun finishCrop(corners: Corners?) {
+        val index = cropIndex.value ?: return
+        saved[KEY_CROP_INDEX] = null
+        if (corners != null) setPages(ScanPages.crop(currentPages(), index, corners))
+    }
+
+    fun move(index: Int, delta: Int) = setPages(ScanPages.move(currentPages(), index, delta))
 
     fun remove(index: Int) {
-        state.value.pages.getOrNull(index)?.let { File(it.path).delete() }
-        setPages(ScanPages.remove(state.value.pages, index))
+        currentPages().getOrNull(index)?.let { File(it.path).delete() }
+        setPages(ScanPages.remove(currentPages(), index))
     }
 
     fun setTitle(value: String) {
@@ -146,9 +168,15 @@ class ScanViewModel(
         }
     }
 
+    /** The pages as saved right now (the [state] flow catches up a moment later). */
+    private fun currentPages(): List<ScanPage> = pagePaths.value.mapIndexed { i, path ->
+        ScanPage(path, pageRotations.value.getOrElse(i) { 0 }, pageCorners.value.getOrNull(i)?.let(Corners::decode))
+    }
+
     private fun setPages(pages: List<ScanPage>) {
         saved[KEY_PATHS] = pages.map { it.path }
         saved[KEY_ROTATIONS] = pages.map { it.rotation }
+        saved[KEY_CORNERS] = pages.map { it.corners?.encode().orEmpty() }
     }
 
     /** Leaving the screen (saved or not) throws away the photos; the PDF is already in storage. */
@@ -161,6 +189,8 @@ class ScanViewModel(
         private const val KEY_SESSION = "session"
         private const val KEY_PATHS = "paths"
         private const val KEY_ROTATIONS = "rotations"
+        private const val KEY_CORNERS = "corners"
+        private const val KEY_CROP_INDEX = "cropIndex"
         private const val KEY_TITLE = "title"
         private const val KEY_CATEGORY = "category"
         private const val KEY_SAVING = "saving"
