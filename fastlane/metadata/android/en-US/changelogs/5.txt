@@ -1,0 +1,1 @@
+New: app lock (fingerprint, face or PIN), expiry reminders 30 and 7 days before and on the day, three color palettes (Teal, Sage, Sun), text size setting, bolder text. Fixed: the keyboard closing while searching in Folders, and a jumpy back animation.

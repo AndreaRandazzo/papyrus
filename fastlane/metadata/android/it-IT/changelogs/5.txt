@@ -1,0 +1,1 @@
+Novità: blocco app (impronta, volto o PIN), promemoria scadenze 30 e 7 giorni prima e il giorno stesso, tre palette di colori (Verde acqua, Salvia, Sole), dimensione del testo, testo più marcato. Corretti: la tastiera che si chiudeva cercando nelle Cartelle e l'animazione di ritorno a scatti.
