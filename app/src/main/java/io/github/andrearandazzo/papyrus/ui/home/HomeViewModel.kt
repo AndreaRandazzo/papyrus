@@ -16,7 +16,9 @@ import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
+import io.github.andrearandazzo.papyrus.data.Folder
 import io.github.andrearandazzo.papyrus.data.ImportResult
+import io.github.andrearandazzo.papyrus.data.LibraryView
 import io.github.andrearandazzo.papyrus.data.UserPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.io.File
+import java.time.LocalDate
 
 data class HomeState(
     /** Documents matching [filter], in its sort order. */
@@ -41,7 +44,12 @@ data class HomeState(
     val filter: DocumentFilter = DocumentFilter(),
     /** True when there are no documents at all, not just none matching the filter. */
     val libraryEmpty: Boolean = true,
-)
+    /** Every category as a folder, for the Folders view. */
+    val folders: List<Folder> = emptyList(),
+) {
+    /** The folder open in the Folders view, if any. */
+    val openFolder: Folder? get() = filter.categoryId?.let { id -> folders.firstOrNull { it.filterId == id } }
+}
 
 class HomeViewModel(
     private val documentRepository: DocumentRepository,
@@ -49,13 +57,16 @@ class HomeViewModel(
     private val preferences: UserPreferences,
 ) : ViewModel() {
 
-    /** List or grid; remembered across app restarts. */
-    var gridView by mutableStateOf(preferences.gridView)
+    /** List, grid or folders; remembered across app restarts. */
+    var view by mutableStateOf(preferences.libraryView)
         private set
 
-    fun toggleView() {
-        gridView = !gridView
-        preferences.gridView = gridView
+    fun showView(view: LibraryView) {
+        if (view == this.view) return
+        this.view = view
+        preferences.libraryView = view
+        // Folders starts from the folder overview, not inside the category picked as a chip.
+        if (view == LibraryView.FOLDERS) filter.update { it.copy(categoryId = null) }
     }
 
     /** Search text. Compose state, so the text field updates without lag while typing. */
@@ -73,13 +84,16 @@ class HomeViewModel(
         // If the selected category was deleted, fall back to "All".
         val effective = filter.copy(
             query = query,
-            categoryId = filter.categoryId?.takeIf { id -> categories.any { it.id == id } },
+            categoryId = filter.categoryId?.takeIf { id ->
+                id == DocumentFilter.NO_CATEGORY || categories.any { it.id == id }
+            },
         )
         HomeState(
             documents = effective.apply(documents, categories),
             categories = categories,
             filter = effective,
             libraryEmpty = documents.isEmpty(),
+            folders = Folder.of(documents, categories, LocalDate.now()),
         )
     }
         .flowOn(Dispatchers.Default)
@@ -110,6 +124,11 @@ class HomeViewModel(
         filter.update { it.copy(categoryId = category?.id) }
     }
 
+    /** Opens a folder of the Folders view, or goes back to the overview with null. */
+    fun openFolder(folder: Folder?) {
+        filter.update { it.copy(categoryId = folder?.filterId) }
+    }
+
     /** Applies a change from the filters panel or the sort menu; the sort order is remembered. */
     fun updateFilter(change: (DocumentFilter) -> DocumentFilter) {
         val updated = filter.updateAndGet(change)
@@ -123,11 +142,17 @@ class HomeViewModel(
         viewModelScope.launch { documentRepository.delete(document) }
     }
 
-    /** Clears search and every filter, but keeps the sort order. */
+    /** Clears search and every filter, but keeps the sort order and the open folder. */
     fun clearFilters() {
         query = ""
-        filter.update { DocumentFilter(sort = it.sort) }
+        filter.update {
+            DocumentFilter(sort = it.sort, categoryId = it.categoryId.takeIf { view == LibraryView.FOLDERS })
+        }
     }
+
+    /** The category new documents go into: the selected one or the open folder, else none. */
+    val targetCategoryId: Long?
+        get() = state.value.filter.categoryId?.takeIf { it != DocumentFilter.NO_CATEGORY }
 
     /**
      * Imports into the currently selected category, if any.
@@ -135,7 +160,7 @@ class HomeViewModel(
      */
     fun import(uris: List<Uri>) {
         if (uris.isEmpty()) return
-        val categoryId = state.value.filter.categoryId
+        val categoryId = targetCategoryId
         viewModelScope.launch {
             _importing.value = true
             val result = try {

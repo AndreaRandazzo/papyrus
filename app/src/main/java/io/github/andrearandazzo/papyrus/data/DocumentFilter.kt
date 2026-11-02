@@ -32,7 +32,7 @@ data class SortOrder(val field: SortField = SortField.ADDED, val ascending: Bool
 data class DocumentFilter(
     /** Words to find in the title, note or category name. Case and accents are ignored. */
     val query: String = "",
-    /** null means every category. */
+    /** null means every category; [NO_CATEGORY] means documents without one. */
     val categoryId: Long? = null,
     /** Empty means every type. */
     val kinds: Set<DocumentKind> = emptySet(),
@@ -58,12 +58,18 @@ data class DocumentFilter(
 
         return documents
             .filter { document ->
-                (categoryId == null || document.categoryId == categoryId) &&
+                isInCategory(document) &&
                     (kinds.isEmpty() || document.kind in kinds) &&
                     isAddedInRange(document, zone) &&
                     matchesAll(document, categoryNames[document.categoryId], terms)
             }
             .sortedWith(comparator())
+    }
+
+    private fun isInCategory(document: Document): Boolean = when (categoryId) {
+        null -> true
+        NO_CATEGORY -> document.categoryId == null
+        else -> document.categoryId == categoryId
     }
 
     private fun isAddedInRange(document: Document, zone: ZoneId): Boolean {
@@ -92,12 +98,15 @@ data class DocumentFilter(
         }
     }
 
-    private companion object {
-        val WHITESPACE = Regex("\\s+")
-        val COMBINING_MARKS = Regex("\\p{Mn}+")
+    companion object {
+        /** [categoryId] for documents without a category. Database ids start at 1, so it never clashes. */
+        const val NO_CATEGORY = -1L
+
+        private val WHITESPACE = Regex("\\s+")
+        private val COMBINING_MARKS = Regex("\\p{Mn}+")
 
         /** "Città" and "citta" both become "citta". */
-        fun normalize(text: String): String =
+        private fun normalize(text: String): String =
             Normalizer.normalize(text.lowercase(Locale.ROOT), Normalizer.Form.NFD).replace(COMBINING_MARKS, "")
     }
 }

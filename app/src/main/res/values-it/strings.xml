@@ -4,6 +4,17 @@
     <!-- Library -->
     <string name="grid_view">Vista a griglia</string>
     <string name="list_view">Vista a elenco</string>
+    <string name="folders_view">Vista cartelle</string>
+    <plurals name="folder_count">
+        <item quantity="one">%d cartella</item>
+        <item quantity="many">%d cartelle</item>
+        <item quantity="other">%d cartelle</item>
+    </plurals>
+    <plurals name="folder_urgent">
+        <item quantity="one">%d scaduto o in scadenza</item>
+        <item quantity="many">%d scaduti o in scadenza</item>
+        <item quantity="other">%d scaduti o in scadenza</item>
+    </plurals>
     <string name="search_hint">Cerca documenti</string>
     <string name="clear_search">Cancella ricerca</string>
     <string name="filters">Filtri</string>

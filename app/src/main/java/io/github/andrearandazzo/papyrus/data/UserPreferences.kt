@@ -8,13 +8,18 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/** How the Library shows documents. */
+enum class LibraryView { LIST, GRID, FOLDERS }
+
 /** Small choices and facts that should survive closing the app. */
 class UserPreferences(context: Context) {
     private val prefs = context.getSharedPreferences("preferences", Context.MODE_PRIVATE)
 
-    var gridView: Boolean
-        get() = prefs.getBoolean(KEY_GRID_VIEW, false)
-        set(value) = prefs.edit { putBoolean(KEY_GRID_VIEW, value) }
+    var libraryView: LibraryView
+        get() = LibraryView.entries.firstOrNull { it.name == prefs.getString(KEY_LIBRARY_VIEW, null) }
+            // Before Folders, versions up to 1.1 stored only "grid or not".
+            ?: if (prefs.getBoolean(KEY_GRID_VIEW, false)) LibraryView.GRID else LibraryView.LIST
+        set(value) = prefs.edit { putString(KEY_LIBRARY_VIEW, value.name) }
 
     /** The Library's sort order. An unknown stored field (e.g. from a newer version) means the default. */
     var sortOrder: SortOrder
@@ -48,6 +53,7 @@ class UserPreferences(context: Context) {
 
     private companion object {
         const val KEY_GRID_VIEW = "grid_view"
+        const val KEY_LIBRARY_VIEW = "library_view"
         const val KEY_LAST_BACKUP = "last_backup_at"
         const val KEY_THEME = "theme_mode"
         const val KEY_SORT_FIELD = "sort_field"

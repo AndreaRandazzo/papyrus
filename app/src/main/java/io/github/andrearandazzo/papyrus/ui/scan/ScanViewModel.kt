@@ -66,7 +66,11 @@ class ScanViewModel(
     private val pageCorners = saved.getStateFlow(KEY_CORNERS, emptyList<String>())
     private val cropIndex = saved.getStateFlow<Int?>(KEY_CROP_INDEX, null)
     private val title = saved.getStateFlow(KEY_TITLE, "")
-    private val categoryId = saved.getStateFlow<Long?>(KEY_CATEGORY, null)
+    private val categoryId = saved.getStateFlow<Long?>(
+        KEY_CATEGORY,
+        // Opened from inside a folder: start in its category (navigation argument, -1 means none).
+        saved.get<Long>(KEY_FOLDER_CATEGORY)?.takeIf { it > 0 },
+    )
     private val saving = saved.getStateFlow(KEY_SAVING, false)
 
     private val _events = Channel<ScanEvent>(Channel.BUFFERED)
@@ -193,6 +197,7 @@ class ScanViewModel(
         private const val KEY_CROP_INDEX = "cropIndex"
         private const val KEY_TITLE = "title"
         private const val KEY_CATEGORY = "category"
+        private const val KEY_FOLDER_CATEGORY = "folderCategory"
         private const val KEY_SAVING = "saving"
         private const val KEY_PENDING = "pending"
         private const val KEY_AUTO_STARTED = "autoStarted"
