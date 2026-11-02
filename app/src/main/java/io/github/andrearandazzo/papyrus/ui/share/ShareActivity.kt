@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,13 +45,14 @@ import io.github.andrearandazzo.papyrus.data.ImportResult
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
 import io.github.andrearandazzo.papyrus.ui.components.categoryStyle
+import io.github.andrearandazzo.papyrus.ui.theme.PapyrusActivity
 import io.github.andrearandazzo.papyrus.ui.theme.setPapyrusContent
 
 /**
  * Receives files from Android's share menu ("Share → Papyrus"). It opens on top of the app the user
  * shares from and closes after saving, so they land back where they were.
  */
-class ShareActivity : ComponentActivity() {
+class ShareActivity : PapyrusActivity() {
 
     private val viewModel: ShareViewModel by viewModels { ShareViewModel.factory(sharedUris(intent)) }
 

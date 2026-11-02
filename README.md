@@ -36,7 +36,8 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 - Previews of PDF pages and photos; list, grid or folders view
 - Open and share documents with other apps
 - Backup and restore the whole library as one ZIP file
-- Light and dark theme; English and Italian; report a bug or request a feature from Settings
+- Light and dark theme, three color palettes (Teal, Sage, Sun) and four text sizes; English and Italian;
+  report a bug or request a feature from Settings
 
 ### About backups
 

@@ -11,12 +11,12 @@ import kotlin.math.absoluteValue
 /** The icon and color shown next to a category. */
 data class CategoryStyle(@DrawableRes val icon: Int, val tint: Color)
 
-private val GREEN = Color(0xFF7FA37A)
-private val PINK = Color(0xFFD98C9A)
-private val SAND = Color(0xFFC9A27A)
-private val BLUE = Color(0xFF8BA3D1)
-private val OLIVE = Color(0xFFA9AE7B)
-private val LAVENDER = Color(0xFFA99AC9)
+private val GREEN = Color(0xFF3FB866)
+private val PINK = Color(0xFFF0617F)
+private val SAND = Color(0xFFF2A33A)
+private val BLUE = Color(0xFF4F8DF5)
+private val OLIVE = Color(0xFFA6BD2E)
+private val LAVENDER = Color(0xFF9B72F0)
 private val FALLBACK_TINTS = listOf(GREEN, PINK, SAND, BLUE, OLIVE, LAVENDER)
 
 /**

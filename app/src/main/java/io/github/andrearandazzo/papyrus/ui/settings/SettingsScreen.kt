@@ -4,7 +4,9 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +39,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -44,6 +49,8 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.andrearandazzo.papyrus.PapyrusApp
 import io.github.andrearandazzo.papyrus.R
+import io.github.andrearandazzo.papyrus.data.AppPalette
+import io.github.andrearandazzo.papyrus.data.TextSize
 import io.github.andrearandazzo.papyrus.data.ThemeMode
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
@@ -55,6 +62,8 @@ fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val preferences = (context.applicationContext as PapyrusApp).preferences
     val themeMode by preferences.themeMode.collectAsStateWithLifecycle()
+    val palette by preferences.palette.collectAsStateWithLifecycle()
+    val textSize by preferences.textSize.collectAsStateWithLifecycle()
     val info = remember { deviceInfo(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -89,6 +98,14 @@ fun SettingsScreen(onBack: () -> Unit) {
             SettingsRow(R.drawable.ic_palette, stringResource(R.string.theme), stringResource(themeMode.label())) {
                 dialog = "theme"
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            SettingsRow(R.drawable.ic_colors, stringResource(R.string.palette), stringResource(palette.label())) {
+                dialog = "palette"
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            SettingsRow(R.drawable.ic_text_size, stringResource(R.string.text_size), stringResource(textSize.label())) {
+                dialog = "textSize"
+            }
             if (AppLanguageSetting.isSupported) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 val language = remember { AppLanguageSetting.current(context) }
@@ -122,7 +139,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
             Text(
                 stringResource(R.string.feedback_privacy),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
             )
@@ -155,6 +172,25 @@ fun SettingsScreen(onBack: () -> Unit) {
             onSelect = { preferences.setThemeMode(it); dialog = null },
             onDismiss = { dialog = null },
         )
+        "palette" -> ChoiceDialog(
+            title = stringResource(R.string.palette),
+            options = AppPalette.entries,
+            selected = palette,
+            label = { stringResource(it.label()) },
+            leading = { PaletteSwatch(it) },
+            onSelect = { preferences.setPalette(it); dialog = null },
+            onDismiss = { dialog = null },
+        )
+        "textSize" -> ChoiceDialog(
+            title = stringResource(R.string.text_size),
+            options = TextSize.entries,
+            selected = textSize,
+            // Each option in its own size, so the choice shows what it does.
+            label = { stringResource(it.label()) },
+            textScale = { it.scale / textSize.scale },
+            onSelect = { preferences.setTextSize(it); dialog = null },
+            onDismiss = { dialog = null },
+        )
         "language" -> if (AppLanguageSetting.isSupported) ChoiceDialog(
             title = stringResource(R.string.language),
             options = AppLanguage.entries,
@@ -183,8 +219,8 @@ private fun SettingsRow(icon: Int, title: String, value: String, trailing: Int? 
         SymbolIcon(icon, contentDescription = null)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall)
-            Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         trailing?.let { SymbolIcon(it, contentDescription = null, modifier = Modifier.size(20.dp)) }
     }
@@ -198,6 +234,8 @@ private fun <T> ChoiceDialog(
     label: @Composable (T) -> String,
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
+    leading: (@Composable (T) -> Unit)? = null,
+    textScale: (T) -> Float = { 1f },
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -214,7 +252,12 @@ private fun <T> ChoiceDialog(
                     ) {
                         RadioButton(selected = option == selected, onClick = null)
                         Spacer(Modifier.width(12.dp))
-                        Text(label(option), style = MaterialTheme.typography.bodyLarge)
+                        leading?.let {
+                            it(option)
+                            Spacer(Modifier.width(12.dp))
+                        }
+                        val style = MaterialTheme.typography.bodyLarge
+                        Text(label(option), style = style.copy(fontSize = style.fontSize * textScale(option)))
                     }
                 }
             }
@@ -223,6 +266,32 @@ private fun <T> ChoiceDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
         },
     )
+}
+
+/** The palette's two main colors in a small circle, as they look in light mode. */
+@Composable
+private fun PaletteSwatch(palette: AppPalette) {
+    val (main, highlight) = when (palette) {
+        AppPalette.TEAL -> Color(0xFF0F6E66) to Color(0xFFBDEEE6)
+        AppPalette.SAGE -> Color(0xFF2F6B45) to Color(0xFFC2EBCB)
+        AppPalette.SUN -> Color(0xFF2F6B45) to Color(0xFFFFDDA8)
+    }
+    Box(Modifier.size(28.dp).clip(CircleShape).background(highlight)) {
+        Box(Modifier.size(14.dp).align(Alignment.BottomEnd).clip(CircleShape).background(main))
+    }
+}
+
+private fun AppPalette.label() = when (this) {
+    AppPalette.TEAL -> R.string.palette_teal
+    AppPalette.SAGE -> R.string.palette_sage
+    AppPalette.SUN -> R.string.palette_sun
+}
+
+private fun TextSize.label() = when (this) {
+    TextSize.SMALL -> R.string.text_size_small
+    TextSize.NORMAL -> R.string.text_size_normal
+    TextSize.LARGE -> R.string.text_size_large
+    TextSize.EXTRA_LARGE -> R.string.text_size_extra_large
 }
 
 private fun ThemeMode.label() = when (this) {
