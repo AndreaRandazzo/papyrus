@@ -1,0 +1,1 @@
+New: scan paper documents with the camera (multi-page, crop and straighten), "Share to Papyrus" from any app, Settings (theme, language, report a bug, request a feature). Starter categories follow the app language.
