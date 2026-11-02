@@ -15,13 +15,15 @@ import io.github.andrearandazzo.papyrus.data.ThemeMode
 
 /**
  * Shows [content] edge to edge in the Papyrus theme, following the theme chosen in Settings.
- * Every activity uses this, so they all look and behave the same.
+ * Every activity uses this, so they all look and behave the same. Text size is applied by
+ * [PapyrusActivity].
  */
 fun ComponentActivity.setPapyrusContent(content: @Composable () -> Unit) {
     enableEdgeToEdge()
     val preferences = (application as PapyrusApp).preferences
     setContent {
         val themeMode by preferences.themeMode.collectAsStateWithLifecycle()
+        val palette by preferences.palette.collectAsStateWithLifecycle()
         val darkTheme = when (themeMode) {
             ThemeMode.SYSTEM -> isSystemInDarkTheme()
             ThemeMode.LIGHT -> false
@@ -37,6 +39,6 @@ fun ComponentActivity.setPapyrusContent(content: @Composable () -> Unit) {
             enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
             onDispose {}
         }
-        PapyrusTheme(darkTheme = darkTheme, content = content)
+        PapyrusTheme(darkTheme = darkTheme, palette = palette, content = content)
     }
 }

@@ -1,11 +1,11 @@
 package io.github.andrearandazzo.papyrus
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import io.github.andrearandazzo.papyrus.ui.PapyrusNavHost
+import io.github.andrearandazzo.papyrus.ui.theme.PapyrusActivity
 import io.github.andrearandazzo.papyrus.ui.theme.setPapyrusContent
 
-class MainActivity : ComponentActivity() {
+class MainActivity : PapyrusActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         syncStarterCategories()
