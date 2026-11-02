@@ -36,6 +36,24 @@
         <item quantity="one">%d document added</item>
         <item quantity="other">%d documents added</item>
     </plurals>
+    <plurals name="import_done_originals">
+        <item quantity="one">%d document added. The original is still on your phone.</item>
+        <item quantity="other">%d documents added. The originals are still on your phone.</item>
+    </plurals>
+    <string name="delete_originals">Delete originals</string>
+    <plurals name="delete_originals_title">
+        <item quantity="one">Delete the original file?</item>
+        <item quantity="other">Delete %d original files?</item>
+    </plurals>
+    <string name="delete_originals_body">Papyrus keeps its own copies, so you won\'t lose any document. The originals are deleted from where you picked them, e.g. Download. This can\'t be undone.</string>
+    <plurals name="originals_deleted">
+        <item quantity="one">Original deleted</item>
+        <item quantity="other">%d originals deleted</item>
+    </plurals>
+    <plurals name="originals_not_deleted">
+        <item quantity="one">%d original could not be deleted</item>
+        <item quantity="other">%d originals could not be deleted</item>
+    </plurals>
     <plurals name="import_failed">
         <item quantity="one">%d file could not be added</item>
         <item quantity="other">%d files could not be added</item>

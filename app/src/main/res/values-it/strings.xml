@@ -37,6 +37,28 @@
         <item quantity="many">%d documenti aggiunti</item>
         <item quantity="other">%d documenti aggiunti</item>
     </plurals>
+    <plurals name="import_done_originals">
+        <item quantity="one">%d documento aggiunto. L\'originale è ancora sul telefono.</item>
+        <item quantity="many">%d documenti aggiunti. Gli originali sono ancora sul telefono.</item>
+        <item quantity="other">%d documenti aggiunti. Gli originali sono ancora sul telefono.</item>
+    </plurals>
+    <string name="delete_originals">Elimina originali</string>
+    <plurals name="delete_originals_title">
+        <item quantity="one">Eliminare il file originale?</item>
+        <item quantity="many">Eliminare %d file originali?</item>
+        <item quantity="other">Eliminare %d file originali?</item>
+    </plurals>
+    <string name="delete_originals_body">Papyrus conserva le sue copie, quindi non perderai nessun documento. Gli originali vengono eliminati da dove li hai scelti, ad es. Download. L\'operazione non può essere annullata.</string>
+    <plurals name="originals_deleted">
+        <item quantity="one">Originale eliminato</item>
+        <item quantity="many">%d originali eliminati</item>
+        <item quantity="other">%d originali eliminati</item>
+    </plurals>
+    <plurals name="originals_not_deleted">
+        <item quantity="one">%d originale non è stato eliminato</item>
+        <item quantity="many">%d originali non sono stati eliminati</item>
+        <item quantity="other">%d originali non sono stati eliminati</item>
+    </plurals>
     <plurals name="import_failed">
         <item quantity="one">Impossibile aggiungere %d file</item>
         <item quantity="many">Impossibile aggiungere %d file</item>
