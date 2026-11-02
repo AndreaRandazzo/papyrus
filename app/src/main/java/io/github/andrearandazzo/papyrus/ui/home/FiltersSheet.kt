@@ -19,6 +19,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -37,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import io.github.andrearandazzo.papyrus.R
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentKind
+import io.github.andrearandazzo.papyrus.data.SortField
 import io.github.andrearandazzo.papyrus.data.SortOrder
 import io.github.andrearandazzo.papyrus.ui.components.DateField
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
@@ -70,7 +74,7 @@ fun FiltersSheet(
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(onClick = {
-                    onChange { it.copy(kinds = emptySet(), addedFrom = null, addedTo = null, sort = SortOrder.NEWEST) }
+                    onChange { it.copy(kinds = emptySet(), addedFrom = null, addedTo = null, sort = SortOrder.DEFAULT) }
                 }) { Text(stringResource(R.string.reset)) }
             }
 
@@ -114,9 +118,26 @@ fun FiltersSheet(
 
             SectionLabel(stringResource(R.string.sort_by))
             Column {
-                SortOrder.entries.forEach { order -> SortOption(order, selected = filter.sort == order) {
-                    onChange { it.copy(sort = order) }
-                } }
+                SortField.entries.forEach { field ->
+                    SortOption(stringResource(field.label()), selected = filter.sort.field == field) {
+                        onChange { if (it.sort.field == field) it else it.copy(sort = SortOrder(field)) }
+                    }
+                }
+            }
+
+            SectionLabel(stringResource(R.string.sort_direction))
+            // Both directions of the chosen field, in words: "Title A–Z" | "Title Z–A".
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                listOf(filter.sort.field.ascendingFirst, !filter.sort.field.ascendingFirst).forEachIndexed { index, ascending ->
+                    val order = SortOrder(filter.sort.field, ascending)
+                    SegmentedButton(
+                        selected = filter.sort == order,
+                        onClick = { onChange { it.copy(sort = order) } },
+                        shape = SegmentedButtonDefaults.itemShape(index, count = 2),
+                        label = { Text(stringResource(order.label()), maxLines = 1) },
+                        modifier = Modifier.height(48.dp),
+                    )
+                }
             }
 
             Spacer(Modifier.height(4.dp))
@@ -130,7 +151,7 @@ fun FiltersSheet(
 }
 
 @Composable
-private fun SortOption(order: SortOrder, selected: Boolean, onClick: () -> Unit) {
+private fun SortOption(label: String, selected: Boolean, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -142,7 +163,7 @@ private fun SortOption(order: SortOrder, selected: Boolean, onClick: () -> Unit)
             if (selected) SymbolIcon(R.drawable.ic_check, contentDescription = null, modifier = Modifier.size(20.dp))
         }
         Text(
-            stringResource(order.sheetLabel()),
+            label,
             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
@@ -156,9 +177,15 @@ private fun DocumentKind.filterLabel() = when (this) {
     DocumentKind.OTHER -> R.string.type_other
 }
 
-private fun SortOrder.sheetLabel() = when (this) {
-    SortOrder.NEWEST -> R.string.sort_newest
-    SortOrder.OLDEST -> R.string.sort_oldest
-    SortOrder.TITLE -> R.string.sort_title
-    SortOrder.EXPIRY -> R.string.sort_expiry
+fun SortField.label() = when (this) {
+    SortField.ADDED -> R.string.sort_field_added
+    SortField.TITLE -> R.string.sort_field_title
+    SortField.EXPIRY -> R.string.sort_field_expiry
+}
+
+/** The order in words, e.g. "Title Z–A". */
+fun SortOrder.label() = when (field) {
+    SortField.ADDED -> if (ascending) R.string.sort_oldest else R.string.sort_newest
+    SortField.TITLE -> if (ascending) R.string.sort_title else R.string.sort_title_desc
+    SortField.EXPIRY -> if (ascending) R.string.sort_expiry else R.string.sort_expiry_desc
 }

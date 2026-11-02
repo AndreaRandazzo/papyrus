@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -61,7 +62,7 @@ class HomeViewModel(
     var query by mutableStateOf("")
         private set
 
-    private val filter = MutableStateFlow(DocumentFilter())
+    private val filter = MutableStateFlow(DocumentFilter(sort = preferences.sortOrder))
 
     val state: StateFlow<HomeState> = combine(
         documentRepository.documents,
@@ -98,8 +99,10 @@ class HomeViewModel(
         filter.update { it.copy(categoryId = category?.id) }
     }
 
+    /** Applies a change from the filters panel or the sort menu; the sort order is remembered. */
     fun updateFilter(change: (DocumentFilter) -> DocumentFilter) {
-        filter.update(change)
+        val updated = filter.updateAndGet(change)
+        if (updated.sort != preferences.sortOrder) preferences.sortOrder = updated.sort
     }
 
     /** A copy with a readable file name, to open in or share with another app. */
