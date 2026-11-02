@@ -1,6 +1,7 @@
 package io.github.andrearandazzo.papyrus.ui.home
 
 import android.content.res.Resources
+import android.net.Uri
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,13 +38,16 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -63,11 +67,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.material3.Icon
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -96,8 +99,8 @@ import io.github.andrearandazzo.papyrus.ui.components.categoryStyle
 import io.github.andrearandazzo.papyrus.ui.daysUntil
 import io.github.andrearandazzo.papyrus.ui.expiryText
 import io.github.andrearandazzo.papyrus.ui.formatInstantDate
-import kotlinx.coroutines.launch
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 /** File types offered in the system file picker. */
 private val IMPORTABLE_TYPES = arrayOf(
@@ -130,6 +133,8 @@ fun HomeScreen(
     var showFilters by rememberSaveable { mutableStateOf(false) }
     var showAddMenu by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<Document?>(null) }
+    // Originals of the last import the user asked to delete, waiting for confirmation.
+    var pendingOriginals by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val context = LocalContext.current
     // Follows language changes, unlike context.resources.
     val resources = LocalResources.current
@@ -159,8 +164,27 @@ fun HomeScreen(
     )
 
     LaunchedEffect(viewModel) {
+        launch {
+            viewModel.originalsDeleted.collect { (deleted, asked) ->
+                snackbarHostState.showSnackbar(
+                    if (deleted == asked) resources.getQuantityString(R.plurals.originals_deleted, deleted, deleted)
+                    else resources.getQuantityString(R.plurals.originals_not_deleted, asked - deleted, asked - deleted),
+                )
+            }
+        }
         viewModel.importResults.collect { result ->
-            snackbarHostState.showSnackbar(result.text(resources))
+            if (result.failed > 0 || result.deletableOriginals.isEmpty()) {
+                snackbarHostState.showSnackbar(result.text(resources))
+            } else {
+                // Imports are copies: offer to free the space the originals still take.
+                val choice = snackbarHostState.showSnackbar(
+                    message = resources.getQuantityString(R.plurals.import_done_originals, result.imported, result.imported),
+                    actionLabel = resources.getString(R.string.delete_originals),
+                    withDismissAction = true,
+                    duration = SnackbarDuration.Long,
+                )
+                if (choice == SnackbarResult.ActionPerformed) pendingOriginals = result.deletableOriginals
+            }
         }
     }
 
@@ -259,6 +283,25 @@ fun HomeScreen(
             resultCount = state.documents.size,
             onChange = viewModel::updateFilter,
             onDismiss = { showFilters = false },
+        )
+    }
+
+    if (pendingOriginals.isNotEmpty()) {
+        val count = pendingOriginals.size
+        AlertDialog(
+            onDismissRequest = { pendingOriginals = emptyList() },
+            icon = { SymbolIcon(R.drawable.ic_delete, contentDescription = null) },
+            title = { Text(pluralStringResource(R.plurals.delete_originals_title, count, count)) },
+            text = { Text(stringResource(R.string.delete_originals_body)) },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.deleteOriginals(pendingOriginals)
+                    pendingOriginals = emptyList()
+                }) { Text(stringResource(R.string.delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingOriginals = emptyList() }) { Text(stringResource(android.R.string.cancel)) }
+            },
         )
     }
 

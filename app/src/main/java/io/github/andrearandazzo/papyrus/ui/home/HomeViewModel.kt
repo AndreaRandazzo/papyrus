@@ -91,6 +91,17 @@ class HomeViewModel(
     private val _importResults = Channel<ImportResult>(Channel.BUFFERED)
     val importResults: Flow<ImportResult> = _importResults.receiveAsFlow()
 
+    /** How many originals were deleted, out of how many asked. */
+    private val _originalsDeleted = Channel<Pair<Int, Int>>(Channel.BUFFERED)
+    val originalsDeleted: Flow<Pair<Int, Int>> = _originalsDeleted.receiveAsFlow()
+
+    /** Deletes the source files of an import the user confirmed; Papyrus keeps its copies. */
+    fun deleteOriginals(uris: List<Uri>) {
+        viewModelScope.launch {
+            _originalsDeleted.send(documentRepository.deleteOriginals(uris) to uris.size)
+        }
+    }
+
     fun search(text: String) {
         query = text
     }

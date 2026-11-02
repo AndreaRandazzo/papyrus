@@ -2,6 +2,7 @@ package io.github.andrearandazzo.papyrus.data
 
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
@@ -13,8 +14,11 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 
-/** Result of importing several files at once. */
-data class ImportResult(val imported: Int, val failed: Int)
+/**
+ * Result of importing several files at once. [deletableOriginals] are the imported files whose
+ * source lets Papyrus delete them (e.g. a file picked in Download), now that Papyrus has a copy.
+ */
+data class ImportResult(val imported: Int, val failed: Int, val deletableOriginals: List<Uri> = emptyList())
 
 /**
  * Single owner of documents: keeps the stored files and the database rows in sync.
@@ -57,9 +61,11 @@ class DocumentRepository(
      */
     suspend fun importAll(uris: List<Uri>, categoryId: Long?): ImportResult {
         var failed = 0
+        val deletable = mutableListOf<Uri>()
         for (uri in uris) {
             try {
                 import(uri, categoryId)
+                if (canDeleteOriginal(uri)) deletable += uri
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -67,7 +73,38 @@ class DocumentRepository(
                 failed++
             }
         }
-        return ImportResult(imported = uris.size - failed, failed = failed)
+        return ImportResult(imported = uris.size - failed, failed = failed, deletableOriginals = deletable)
+    }
+
+    /**
+     * True if the file behind [uri] can be deleted by Papyrus: files picked with the system file
+     * picker usually can; files shared from another app (e.g. WhatsApp) can't.
+     */
+    private suspend fun canDeleteOriginal(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        if (!DocumentsContract.isDocumentUri(context, uri)) return@withContext false
+        try {
+            context.contentResolver.query(uri, arrayOf(DocumentsContract.Document.COLUMN_FLAGS), null, null, null)
+                ?.use { cursor ->
+                    cursor.moveToFirst() && cursor.getInt(0) and DocumentsContract.Document.FLAG_SUPPORTS_DELETE != 0
+                } ?: false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Deletes the original files of an import (see [ImportResult.deletableOriginals]); Papyrus keeps
+     * its own copies. Returns how many were deleted; one that fails is skipped.
+     */
+    suspend fun deleteOriginals(uris: List<Uri>): Int = withContext(Dispatchers.IO) {
+        uris.count { uri ->
+            try {
+                DocumentsContract.deleteDocument(context.contentResolver, uri)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not delete original $uri", e)
+                false
+            }
+        }
     }
 
     /**
@@ -135,6 +172,7 @@ class DocumentRepository(
      * so apps it is opened or shared with show a readable name instead of the internal one.
      */
     suspend fun exportCopy(document: Document): File = withContext(Dispatchers.IO) {
+        removeOldSharedCopies()
         val dir = File(sharedDir, document.id.toString())
         dir.deleteRecursively()
         dir.mkdirs()
@@ -150,10 +188,20 @@ class DocumentRepository(
         File(sharedDir, document.id.toString()).deleteRecursively()
     }
 
+    /**
+     * Copies handed to other apps are only needed while that app reads them; an hour is plenty.
+     * Cleaning up here means they never pile up, without needing a background job.
+     */
+    private fun removeOldSharedCopies() {
+        val cutoff = System.currentTimeMillis() - SHARED_COPY_LIFETIME_MS
+        sharedDir.listFiles()?.filter { it.lastModified() < cutoff }?.forEach { it.deleteRecursively() }
+    }
+
     private fun safeFileName(title: String): String =
         title.replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_").trim().take(100).ifEmpty { "document" }
 
     private companion object {
         const val TAG = "DocumentRepository"
+        const val SHARED_COPY_LIFETIME_MS = 60 * 60 * 1000L
     }
 }
