@@ -5,6 +5,15 @@
     <!-- Library -->
     <string name="grid_view">Grid view</string>
     <string name="list_view">List view</string>
+    <string name="folders_view">Folders view</string>
+    <plurals name="folder_count">
+        <item quantity="one">%d folder</item>
+        <item quantity="other">%d folders</item>
+    </plurals>
+    <plurals name="folder_urgent">
+        <item quantity="one">%d expired or expiring soon</item>
+        <item quantity="other">%d expired or expiring soon</item>
+    </plurals>
     <string name="search_hint">Search documents</string>
     <string name="clear_search">Clear search</string>
     <string name="filters">Filters</string>

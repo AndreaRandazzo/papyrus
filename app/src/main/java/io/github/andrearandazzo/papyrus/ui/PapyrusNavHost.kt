@@ -43,7 +43,10 @@ private object Routes {
     const val DOCUMENT = "document/{$DOCUMENT_ID}"
     fun document(id: Long) = "document/$id"
     const val SETTINGS = "settings"
-    const val SCAN = "scan"
+    /** Read by ScanViewModel: the category a new scan starts in, or -1 for none. */
+    const val SCAN_CATEGORY = "folderCategory"
+    const val SCAN = "scan?$SCAN_CATEGORY={$SCAN_CATEGORY}"
+    fun scan(categoryId: Long?) = "scan?$SCAN_CATEGORY=${categoryId ?: -1}"
 }
 
 /** The four destinations of the bottom navigation bar. */
@@ -88,7 +91,7 @@ fun PapyrusNavHost() {
                     onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
                     onOpenBackup = { navController.switchTo(Tab.BACKUP) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                    onScan = { navController.navigate(Routes.SCAN) },
+                    onScan = { categoryId -> navController.navigate(Routes.scan(categoryId)) },
                 )
             }
             composable(Tab.EXPIRING.route) {
@@ -96,7 +99,12 @@ fun PapyrusNavHost() {
             }
             composable(Tab.CATEGORIES.route) { CategoriesScreen() }
             composable(Tab.BACKUP.route) { BackupScreen() }
-            composable(Routes.SCAN) { ScanScreen(onClose = { navController.popBackStack() }) }
+            composable(
+                Routes.SCAN,
+                arguments = listOf(navArgument(Routes.SCAN_CATEGORY) { type = NavType.LongType; defaultValue = -1L }),
+            ) {
+                ScanScreen(onClose = { navController.popBackStack() })
+            }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
             composable(
                 Routes.DOCUMENT,

@@ -3,6 +3,7 @@ package io.github.andrearandazzo.papyrus.ui.home
 import android.content.res.Resources
 import android.net.Uri
 import android.text.format.Formatter
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -87,6 +88,7 @@ import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentKind
 import io.github.andrearandazzo.papyrus.data.ImportResult
+import io.github.andrearandazzo.papyrus.data.LibraryView
 import io.github.andrearandazzo.papyrus.data.SortField
 import io.github.andrearandazzo.papyrus.data.SortOrder
 import io.github.andrearandazzo.papyrus.ui.DocumentIntents
@@ -110,12 +112,14 @@ private val IMPORTABLE_TYPES = arrayOf(
     "image/*",
 )
 
-/** What a document's "⋮" menu can do. */
+/** What a document's "⋮" menu can do, and the empty states' buttons. */
 private class DocumentActions(
     val open: (Document) -> Unit,
     val share: (Document) -> Unit,
     val edit: (Document) -> Unit,
     val delete: (Document) -> Unit,
+    val add: () -> Unit,
+    val clearFilters: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,7 +128,8 @@ fun HomeScreen(
     onOpenDocument: (Long) -> Unit,
     onOpenBackup: () -> Unit,
     onOpenSettings: () -> Unit,
-    onScan: () -> Unit,
+    /** Opens the scanner; new scans go into the given category. */
+    onScan: (categoryId: Long?) -> Unit,
     viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -149,6 +154,11 @@ fun HomeScreen(
     // "+" offers both ways of adding: scanning paper or picking files.
     val addDocuments = { showAddMenu = true }
 
+    val inFolders = viewModel.view == LibraryView.FOLDERS
+    // Inside a folder of the Folders view; back returns to the folder overview.
+    val openFolder = if (inFolders) state.openFolder else null
+    BackHandler(enabled = openFolder != null) { viewModel.openFolder(null) }
+
     val actions = DocumentActions(
         open = { document ->
             scope.launch {
@@ -161,6 +171,8 @@ fun HomeScreen(
         },
         edit = { onOpenDocument(it.id) },
         delete = { pendingDelete = it },
+        add = addDocuments,
+        clearFilters = viewModel::clearFilters,
     )
 
     LaunchedEffect(viewModel) {
@@ -190,24 +202,20 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
-                actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        SymbolIcon(R.drawable.ic_settings, contentDescription = stringResource(R.string.settings))
-                    }
-                    if (!state.libraryEmpty) {
-                        IconButton(onClick = viewModel::toggleView) {
-                            if (viewModel.gridView) {
-                                SymbolIcon(R.drawable.ic_view_agenda, contentDescription = stringResource(R.string.list_view))
-                            } else {
-                                SymbolIcon(R.drawable.ic_grid_view, contentDescription = stringResource(R.string.grid_view))
-                            }
+            if (openFolder != null) {
+                FolderTopBar(openFolder, onBack = { viewModel.openFolder(null) })
+            } else {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge) },
+                    actions = {
+                        IconButton(onClick = onOpenSettings) {
+                            SymbolIcon(R.drawable.ic_settings, contentDescription = stringResource(R.string.settings))
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-            )
+                        if (!state.libraryEmpty) LibraryViewSwitch(viewModel.view, viewModel::showView)
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+                )
+            }
         },
         floatingActionButton = {
             if (!state.libraryEmpty) {
@@ -224,54 +232,47 @@ fun HomeScreen(
                 FirstLaunch(onAdd = addDocuments, onRestore = onOpenBackup, busy = importing)
                 return@Column
             }
-            SearchField(viewModel.query, viewModel::search)
-            FilterRow(
-                categories = state.categories,
-                filter = state.filter,
-                onSelectCategory = viewModel::selectCategory,
-                onOpenFilters = { showFilters = true },
-            )
             when {
-                state.documents.isNotEmpty() -> {
+                openFolder != null -> {
+                    FolderToolbar(
+                        filterCount = state.filter.panelFilterCount,
+                        sort = state.filter.sort,
+                        onOpenFilters = { showFilters = true },
+                        onSort = { order -> viewModel.updateFilter { it.copy(sort = order) } },
+                    )
+                    Documents(state, grid = false, actions, emptyCategory = openFolder.documentCount == 0)
+                }
+                // The folder overview; typing a search shows matching documents from every folder.
+                inFolders && viewModel.query.isBlank() -> {
+                    SearchField(viewModel.query, viewModel::search)
+                    FolderGrid(state.folders, onOpen = viewModel::openFolder)
+                }
+                else -> {
+                    SearchField(viewModel.query, viewModel::search)
+                    if (!inFolders) {
+                        FilterRow(
+                            categories = state.categories,
+                            filter = state.filter,
+                            onSelectCategory = viewModel::selectCategory,
+                            onOpenFilters = { showFilters = true },
+                        )
+                    }
                     ResultsHeader(
                         count = state.documents.size,
                         sort = state.filter.sort,
                         onSort = { order -> viewModel.updateFilter { it.copy(sort = order) } },
                     )
-                    val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
-                    // A new sort order starts again from the top instead of following the visible item.
-                    key(state.filter.sort) {
-                        if (viewModel.gridView) {
-                            DocumentGrid(state.documents, categoryNames, actions)
-                        } else {
-                            DocumentList(state.documents, categoryNames, actions)
-                        }
-                    }
+                    // Only a category is selected: suggest adding documents to it.
+                    val emptyCategory = state.filter.categoryId != null && !state.filter.copy(categoryId = null).isFiltering
+                    Documents(state, grid = viewModel.view == LibraryView.GRID, actions, emptyCategory)
                 }
-                // Only a category is selected: suggest adding documents to it.
-                state.filter.categoryId != null && !state.filter.copy(categoryId = null).isFiltering -> EmptyState(
-                    illustration = R.drawable.ic_duo_folder,
-                    title = stringResource(R.string.empty_category_title),
-                    body = stringResource(R.string.empty_category_body),
-                    actionIcon = R.drawable.ic_add,
-                    actionLabel = stringResource(R.string.import_documents),
-                    onAction = addDocuments,
-                )
-                else -> EmptyState(
-                    illustration = R.drawable.ic_duo_search,
-                    title = stringResource(R.string.no_results_title),
-                    body = stringResource(R.string.no_results_body),
-                    actionIcon = R.drawable.ic_filter_alt_off,
-                    actionLabel = stringResource(R.string.clear_filters),
-                    onAction = viewModel::clearFilters,
-                )
             }
         }
     }
 
     if (showAddMenu) {
         AddDocumentSheet(
-            onScan = { showAddMenu = false; onScan() },
+            onScan = { showAddMenu = false; onScan(viewModel.targetCategoryId) },
             onPickFiles = { showAddMenu = false; pickFiles() },
             onDismiss = { showAddMenu = false },
         )
@@ -379,32 +380,7 @@ private fun FilterRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        item {
-            val count = filter.panelFilterCount
-            FilterChip(
-                selected = count > 0,
-                onClick = onOpenFilters,
-                leadingIcon = { SymbolIcon(R.drawable.ic_tune, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                label = {
-                    Text(stringResource(R.string.filters))
-                    if (count > 0) {
-                        Spacer(Modifier.width(6.dp))
-                        Box(
-                            Modifier.size(18.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                count.toString(),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-                },
-                modifier = Modifier.height(40.dp),
-            )
-        }
+        item { FiltersChip(filter.panelFilterCount, onOpenFilters) }
         item {
             CategoryChip(stringResource(R.string.filter_all), icon = null, filter.categoryId == null) {
                 onSelectCategory(null)
@@ -416,6 +392,34 @@ private fun FilterRow(
             }
         }
     }
+}
+
+/** "Filters", with the number of filters set in the filters panel. */
+@Composable
+private fun FiltersChip(count: Int, onClick: () -> Unit) {
+    FilterChip(
+        selected = count > 0,
+        onClick = onClick,
+        leadingIcon = { SymbolIcon(R.drawable.ic_tune, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        label = {
+            Text(stringResource(R.string.filters))
+            if (count > 0) {
+                Spacer(Modifier.width(6.dp))
+                Box(
+                    Modifier.size(18.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        count.toString(),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        },
+        modifier = Modifier.height(40.dp),
+    )
 }
 
 @Composable
@@ -430,12 +434,46 @@ private fun CategoryChip(label: String, icon: Int?, selected: Boolean, onClick: 
 }
 
 /**
- * "6 DOCUMENTS" on the left; on the right the sort order as a small menu of fields, and an arrow
- * that reverses it.
+ * The documents matching the filter as a list or grid, or an empty state: [emptyCategory] means
+ * only a category (or folder) is selected and it has nothing yet, so the button adds documents.
  */
 @Composable
+private fun Documents(state: HomeState, grid: Boolean, actions: DocumentActions, emptyCategory: Boolean) {
+    when {
+        state.documents.isNotEmpty() -> {
+            val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
+            // A new sort order starts again from the top instead of following the visible item.
+            key(state.filter.sort) {
+                if (grid) {
+                    DocumentGrid(state.documents, categoryNames, actions)
+                } else {
+                    DocumentList(state.documents, categoryNames, actions)
+                }
+            }
+        }
+        emptyCategory -> EmptyState(
+            illustration = R.drawable.ic_duo_folder,
+            title = stringResource(R.string.empty_category_title),
+            body = stringResource(R.string.empty_category_body),
+            actionIcon = R.drawable.ic_add,
+            actionLabel = stringResource(R.string.import_documents),
+            onAction = actions.add,
+        )
+        else -> EmptyState(
+            illustration = R.drawable.ic_duo_search,
+            title = stringResource(R.string.no_results_title),
+            body = stringResource(R.string.no_results_body),
+            actionIcon = R.drawable.ic_filter_alt_off,
+            actionLabel = stringResource(R.string.clear_filters),
+            onAction = actions.clearFilters,
+        )
+    }
+}
+
+/** "6 DOCUMENTS" on the left, the sort controls on the right. Hidden when nothing matches. */
+@Composable
 private fun ResultsHeader(count: Int, sort: SortOrder, onSort: (SortOrder) -> Unit) {
-    var showSort by remember { mutableStateOf(false) }
+    if (count == 0) return
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -443,6 +481,30 @@ private fun ResultsHeader(count: Int, sort: SortOrder, onSort: (SortOrder) -> Un
             .padding(start = 20.dp, end = 4.dp, top = 8.dp),
     ) {
         SectionLabel(pluralStringResource(R.plurals.document_count, count, count), Modifier.weight(1f))
+        SortControls(sort, onSort)
+    }
+}
+
+/** Inside a folder: the Filters chip on the left, the sort controls on the right. */
+@Composable
+private fun FolderToolbar(filterCount: Int, sort: SortOrder, onOpenFilters: () -> Unit, onSort: (SortOrder) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+    ) {
+        FiltersChip(filterCount, onOpenFilters)
+        Spacer(Modifier.weight(1f))
+        SortControls(sort, onSort)
+    }
+}
+
+/** The sort order as a small menu of fields, and an arrow that reverses it. */
+@Composable
+private fun SortControls(sort: SortOrder, onSort: (SortOrder) -> Unit) {
+    var showSort by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Box {
             TextButton(onClick = { showSort = true }) {
                 Text(stringResource(sort.label()))
