@@ -258,6 +258,19 @@
     <string name="text_size_normal">Normal</string>
     <string name="text_size_large">Large</string>
     <string name="text_size_extra_large">Extra large</string>
+    <string name="settings_privacy">Privacy</string>
+    <string name="app_lock">App lock</string>
+    <string name="app_lock_body">Ask for fingerprint, face or phone PIN to open Papyrus</string>
+    <string name="lock_after">Lock after</string>
+    <string name="lock_immediately">Immediately</string>
+    <string name="lock_one_minute">After 1 minute</string>
+    <string name="lock_five_minutes">After 5 minutes</string>
+    <string name="app_lock_no_screen_lock">Set a screen lock in your phone\'s settings first.</string>
+    <string name="locked_title">Papyrus is locked</string>
+    <string name="locked_body">Unlock with your fingerprint, face or phone PIN.</string>
+    <string name="unlock">Unlock</string>
+    <string name="unlock_prompt_title">Unlock Papyrus</string>
+    <string name="app_lock_confirm_title">Turn on app lock</string>
     <string name="language">Language</string>
     <string name="language_system">Same as phone</string>
     <!-- Language names are always written in their own language. -->

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -28,6 +29,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -50,8 +52,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.andrearandazzo.papyrus.PapyrusApp
 import io.github.andrearandazzo.papyrus.R
 import io.github.andrearandazzo.papyrus.data.AppPalette
+import io.github.andrearandazzo.papyrus.data.LockTimeout
 import io.github.andrearandazzo.papyrus.data.TextSize
 import io.github.andrearandazzo.papyrus.data.ThemeMode
+import io.github.andrearandazzo.papyrus.lock.DeviceAuth
+import io.github.andrearandazzo.papyrus.lock.rememberDeviceAuth
 import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
 import kotlinx.coroutines.launch
@@ -64,6 +69,13 @@ fun SettingsScreen(onBack: () -> Unit) {
     val themeMode by preferences.themeMode.collectAsStateWithLifecycle()
     val palette by preferences.palette.collectAsStateWithLifecycle()
     val textSize by preferences.textSize.collectAsStateWithLifecycle()
+    val appLock by preferences.appLock.collectAsStateWithLifecycle()
+    val lockTimeout by preferences.lockTimeout.collectAsStateWithLifecycle()
+    val noScreenLock = stringResource(R.string.app_lock_no_screen_lock)
+    // Turning the lock on first proves the phone can unlock it, so nobody gets locked out.
+    val confirmLock = rememberDeviceAuth(stringResource(R.string.app_lock_confirm_title)) {
+        preferences.setAppLock(true)
+    }
     val info = remember { deviceInfo(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -111,6 +123,21 @@ fun SettingsScreen(onBack: () -> Unit) {
                 val language = remember { AppLanguageSetting.current(context) }
                 SettingsRow(R.drawable.ic_translate, stringResource(R.string.language), stringResource(language.label)) {
                     dialog = "language"
+                }
+            }
+
+            Section(stringResource(R.string.settings_privacy))
+            SwitchRow(R.drawable.ic_lock, stringResource(R.string.app_lock), stringResource(R.string.app_lock_body), appLock) { on ->
+                when {
+                    !on -> preferences.setAppLock(false)
+                    DeviceAuth.isAvailable(context) -> confirmLock()
+                    else -> scope.launch { snackbarHostState.showSnackbar(noScreenLock) }
+                }
+            }
+            if (appLock) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SettingsRow(R.drawable.ic_timer, stringResource(R.string.lock_after), stringResource(lockTimeout.label())) {
+                    dialog = "lockTimeout"
                 }
             }
 
@@ -191,6 +218,14 @@ fun SettingsScreen(onBack: () -> Unit) {
             onSelect = { preferences.setTextSize(it); dialog = null },
             onDismiss = { dialog = null },
         )
+        "lockTimeout" -> ChoiceDialog(
+            title = stringResource(R.string.lock_after),
+            options = LockTimeout.entries,
+            selected = lockTimeout,
+            label = { stringResource(it.label()) },
+            onSelect = { preferences.setLockTimeout(it); dialog = null },
+            onDismiss = { dialog = null },
+        )
         "language" -> if (AppLanguageSetting.isSupported) ChoiceDialog(
             title = stringResource(R.string.language),
             options = AppLanguage.entries,
@@ -223,6 +258,27 @@ private fun SettingsRow(icon: Int, title: String, value: String, trailing: Int? 
             Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         trailing?.let { SymbolIcon(it, contentDescription = null, modifier = Modifier.size(20.dp)) }
+    }
+}
+
+/** A setting that is on or off; the whole row toggles it. */
+@Composable
+private fun SwitchRow(icon: Int, title: String, value: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(horizontal = 4.dp, vertical = 14.dp),
+    ) {
+        SymbolIcon(icon, contentDescription = null)
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -292,6 +348,12 @@ private fun TextSize.label() = when (this) {
     TextSize.NORMAL -> R.string.text_size_normal
     TextSize.LARGE -> R.string.text_size_large
     TextSize.EXTRA_LARGE -> R.string.text_size_extra_large
+}
+
+private fun LockTimeout.label() = when (this) {
+    LockTimeout.IMMEDIATELY -> R.string.lock_immediately
+    LockTimeout.ONE_MINUTE -> R.string.lock_one_minute
+    LockTimeout.FIVE_MINUTES -> R.string.lock_five_minutes
 }
 
 private fun ThemeMode.label() = when (this) {

@@ -1,6 +1,6 @@
 <p>Papyrus keeps your important documents in one tidy place on your phone: ID cards, passports, insurance policies, medical tests, contracts, receipts and warranties.</p>
 
-<p><b>Private by design.</b> Everything stays on your device. No account, no cloud, no ads, no tracking. Papyrus asks for no permissions at all, not even internet access.</p>
+<p><b>Private by design.</b> Everything stays on your device. No account, no cloud, no ads, no tracking. Papyrus has no internet access and can't read your storage: it only sees the files you pick.</p>
 
 <p><b>Features</b></p>
 <ul>
@@ -8,6 +8,7 @@
 <li>Scan paper documents with the camera into a multi-page PDF, cropped to the paper's corners</li>
 <li>Share files to Papyrus from any app</li>
 <li>Organize with categories, each with its own icon, and browse them as folders</li>
+<li>Optional app lock with your fingerprint, face or phone PIN</li>
 <li>Notes and expiry dates for every document</li>
 <li>Expiring tab: see what has expired or expires in the next 30 days</li>
 <li>Fast search across titles, notes and categories (ignores accents)</li>

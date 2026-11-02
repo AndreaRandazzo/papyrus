@@ -1,6 +1,6 @@
 <p>Papyrus raccoglie i tuoi documenti importanti in un unico posto ordinato sul telefono: carte d'identità, passaporti, polizze assicurative, esami medici, contratti, ricevute e garanzie.</p>
 
-<p><b>Privato per scelta.</b> Tutto resta sul tuo dispositivo. Nessun account, nessun cloud, nessuna pubblicità, nessun tracciamento. Papyrus non chiede alcun permesso, nemmeno l'accesso a internet.</p>
+<p><b>Privato per scelta.</b> Tutto resta sul tuo dispositivo. Nessun account, nessun cloud, nessuna pubblicità, nessun tracciamento. Papyrus non ha accesso a internet e non può leggere la memoria del telefono: vede solo i file che scegli tu.</p>
 
 <p><b>Funzioni</b></p>
 <ul>
@@ -8,6 +8,7 @@
 <li>Scansiona documenti cartacei con la fotocamera in un PDF di più pagine, ritagliato sugli angoli del foglio</li>
 <li>Condividi file con Papyrus da qualsiasi app</li>
 <li>Organizza con le categorie, ognuna con la sua icona, e sfogliale come cartelle</li>
+<li>Blocco app facoltativo con impronta, volto o PIN del telefono</li>
 <li>Note e date di scadenza per ogni documento</li>
 <li>Scheda In scadenza: vedi cosa è scaduto o scade nei prossimi 30 giorni</li>
 <li>Ricerca veloce in titoli, note e categorie (ignora gli accenti)</li>

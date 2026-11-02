@@ -19,9 +19,10 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 ## Private by design
 
 - **Everything stays on your phone.** No account, no cloud, no ads, no tracking.
-- **No permissions.** Papyrus can't access the internet or your storage. It only sees the files
-  you pick in the system file picker, and it hands a single file to another app only when you
-  tap Open or Share.
+- **No internet, no storage access.** Papyrus has no internet permission and can't read your
+  storage. It only sees the files you pick in the system file picker, and it hands a single file
+  to another app only when you tap Open or Share. Its one permission, `USE_BIOMETRIC`, lets the
+  optional app lock show Android's fingerprint / face prompt; Android grants it without asking.
 
 ## Features
 
@@ -30,6 +31,7 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 - Scan paper documents with the camera into a multi-page PDF, with crop to the paper's corners and rotation
 - Share files to Papyrus from any app
 - Categories with 32 icons to choose from; browse them as folders, or as chips above a list or grid
+- Optional app lock with your fingerprint, face or phone PIN; the recent-apps screen shows a blank card
 - Notes and expiry dates; the **Expiring** tab shows what has expired or expires within 30 days
 - Search titles, notes and categories (case and accents ignored), filter by type and date added,
   sort by date, title or expiry in either direction
