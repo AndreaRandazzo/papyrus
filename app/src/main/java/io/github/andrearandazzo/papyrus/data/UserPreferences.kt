@@ -14,6 +14,9 @@ enum class AppPalette { TEAL, SAGE, SUN }
 /** Text size on top of the phone's own font size, chosen in Settings. */
 enum class TextSize(val scale: Float) { SMALL(0.9f), NORMAL(1f), LARGE(1.15f), EXTRA_LARGE(1.3f) }
 
+/** Settings > Lock after: how long Papyrus can stay in the background before it locks again. */
+enum class LockTimeout(val millis: Long) { IMMEDIATELY(0), ONE_MINUTE(60_000), FIVE_MINUTES(300_000) }
+
 /** How the Library shows documents. */
 enum class LibraryView { LIST, GRID, FOLDERS }
 
@@ -60,6 +63,21 @@ class UserPreferences(context: Context) {
 
     fun setTextSize(size: TextSize) = store(KEY_TEXT_SIZE, size, _textSize)
 
+    private val _appLock = MutableStateFlow(prefs.getBoolean(KEY_APP_LOCK, false))
+
+    /** Settings > App lock: ask for fingerprint, face or the phone's PIN to open Papyrus. */
+    val appLock: StateFlow<Boolean> = _appLock.asStateFlow()
+
+    fun setAppLock(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_APP_LOCK, enabled) }
+        _appLock.value = enabled
+    }
+
+    private val _lockTimeout = MutableStateFlow(stored(KEY_LOCK_TIMEOUT, LockTimeout.IMMEDIATELY))
+    val lockTimeout: StateFlow<LockTimeout> = _lockTimeout.asStateFlow()
+
+    fun setLockTimeout(timeout: LockTimeout) = store(KEY_LOCK_TIMEOUT, timeout, _lockTimeout)
+
     /** An unknown stored value (e.g. from a newer version) falls back to [default]. */
     private inline fun <reified T : Enum<T>> stored(key: String, default: T): T =
         enumValues<T>().firstOrNull { it.name == prefs.getString(key, null) } ?: default
@@ -76,6 +94,8 @@ class UserPreferences(context: Context) {
         const val KEY_THEME = "theme_mode"
         const val KEY_PALETTE = "palette"
         const val KEY_TEXT_SIZE = "text_size"
+        const val KEY_APP_LOCK = "app_lock"
+        const val KEY_LOCK_TIMEOUT = "lock_timeout"
         const val KEY_SORT_FIELD = "sort_field"
         const val KEY_SORT_ASCENDING = "sort_ascending"
     }

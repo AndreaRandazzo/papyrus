@@ -1,7 +1,9 @@
 package io.github.andrearandazzo.papyrus.ui.theme
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.Lifecycle
@@ -13,7 +15,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * Base of every Papyrus activity: applies Settings > Text size on top of the phone's font size.
+ * Base of every Papyrus activity: applies Settings > Text size on top of the phone's font size, and
+ * tells the app lock when the user leaves for another app on purpose.
  *
  * It's applied to the activity's configuration rather than inside Compose, so dialogs, menus and
  * bottom sheets (each drawn in a window of its own) get it too. Changing it recreates the activity,
@@ -40,5 +43,21 @@ abstract class PapyrusActivity : ComponentActivity() {
                 recreate()
             }
         }
+        // With the app lock on, the recent-apps screen shows a blank card instead of the documents.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val appLock = (application as PapyrusApp).preferences.appLock
+            lifecycleScope.launch { appLock.collect { setRecentsScreenshotEnabled(!it) } }
+        }
+    }
+
+    /**
+     * Every other app Papyrus opens goes through here: viewers, the camera, file pickers, the
+     * browser. Coming back from one shouldn't ask to unlock again straight away.
+     */
+    @Deprecated("Still the path every launch takes; overridden only to observe it.")
+    @Suppress("DEPRECATION")
+    override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
+        (application as PapyrusApp).appLock.onOpeningOtherApp()
+        super.startActivityForResult(intent, requestCode, options)
     }
 }

@@ -14,6 +14,7 @@ import io.github.andrearandazzo.papyrus.data.StarterCategories
 import io.github.andrearandazzo.papyrus.data.ThumbnailLoader
 import io.github.andrearandazzo.papyrus.data.UserPreferences
 import io.github.andrearandazzo.papyrus.data.backup.BackupManager
+import io.github.andrearandazzo.papyrus.lock.AppLock
 import kotlinx.coroutines.launch
 
 /** Creates the app-wide singletons once, when first needed. */
@@ -29,6 +30,14 @@ class PapyrusApp : Application() {
     val thumbnails by lazy { ThumbnailLoader(documentRepository) }
     val backupManager by lazy { BackupManager(this, database, documentRepository) }
     val preferences by lazy { UserPreferences(this) }
+    lateinit var appLock: AppLock
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        appLock = AppLock(preferences)
+        registerActivityLifecycleCallbacks(appLock)
+    }
 
     /** On a fresh install, start with a few useful categories in the app's language. */
     private val seedStarterCategories = object : RoomDatabase.Callback() {
