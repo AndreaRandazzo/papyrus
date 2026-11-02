@@ -5,12 +5,14 @@
 <p><b>Funzioni</b></p>
 <ul>
 <li>Aggiungi PDF, file Word e foto: vengono copiati in modo sicuro nell'app</li>
-<li>Organizza con le categorie, ognuna con la sua icona</li>
+<li>Scansiona documenti cartacei con la fotocamera in un PDF di più pagine, ritagliato sugli angoli del foglio</li>
+<li>Condividi file con Papyrus da qualsiasi app</li>
+<li>Organizza con le categorie, ognuna con la sua icona, e sfogliale come cartelle</li>
 <li>Note e date di scadenza per ogni documento</li>
 <li>Scheda In scadenza: vedi cosa è scaduto o scade nei prossimi 30 giorni</li>
 <li>Ricerca veloce in titoli, note e categorie (ignora gli accenti)</li>
-<li>Filtra per tipo e data di aggiunta, ordina per data, titolo o scadenza</li>
-<li>Anteprime delle pagine PDF e delle foto, vista a elenco o a griglia</li>
+<li>Filtra per tipo e data di aggiunta, ordina per data, titolo o scadenza in entrambe le direzioni</li>
+<li>Anteprime delle pagine PDF e delle foto, vista a elenco, a griglia o a cartelle</li>
 <li>Apri e condividi i documenti con altre app</li>
 <li>Backup e ripristino di tutta la libreria in un unico file</li>
 <li>Tema chiaro e scuro, italiano e inglese</li>
