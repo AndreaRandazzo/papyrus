@@ -15,6 +15,7 @@ import io.github.andrearandazzo.papyrus.data.ThumbnailLoader
 import io.github.andrearandazzo.papyrus.data.UserPreferences
 import io.github.andrearandazzo.papyrus.data.backup.BackupManager
 import io.github.andrearandazzo.papyrus.lock.AppLock
+import io.github.andrearandazzo.papyrus.reminders.ExpiryReminders
 import kotlinx.coroutines.launch
 
 /** Creates the app-wide singletons once, when first needed. */
@@ -37,6 +38,8 @@ class PapyrusApp : Application() {
         super.onCreate()
         appLock = AppLock(preferences)
         registerActivityLifecycleCallbacks(appLock)
+        // Keeps the daily check set, e.g. after the app was updated (alarms are cleared then).
+        if (preferences.expiryReminders.value) ExpiryReminders.schedule(this)
     }
 
     /** On a fresh install, start with a few useful categories in the app's language. */

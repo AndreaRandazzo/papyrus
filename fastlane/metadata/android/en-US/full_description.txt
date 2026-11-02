@@ -11,6 +11,7 @@
 <li>Optional app lock with your fingerprint, face or phone PIN</li>
 <li>Notes and expiry dates for every document</li>
 <li>Expiring tab: see what has expired or expires in the next 30 days</li>
+<li>Optional reminders 30 and 7 days before a document expires, and on the day</li>
 <li>Fast search across titles, notes and categories (ignores accents)</li>
 <li>Filter by type and date added, sort by date, title or expiry in either direction</li>
 <li>Previews of PDF pages and photos, list, grid or folders view</li>
