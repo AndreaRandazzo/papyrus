@@ -2,6 +2,7 @@ package io.github.andrearandazzo.papyrus.ui
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
@@ -25,7 +26,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import io.github.andrearandazzo.papyrus.R
@@ -66,27 +66,25 @@ private enum class Tab(
 @Composable
 fun PapyrusNavHost() {
     val navController = rememberNavController()
-    val backStack by navController.currentBackStackEntryAsState()
-    val currentRoute = backStack?.destination?.route
     // Feeds the Expiring tab's badge with the number of urgent documents.
     val expiring: ExpiringViewModel = viewModel(factory = ExpiringViewModel.Factory)
     val expiringState by expiring.state.collectAsStateWithLifecycle()
 
-    Scaffold(
-        bottomBar = {
-            // The bar is for top-level screens only; document details has its own back arrow.
-            if (Tab.entries.any { it.route == currentRoute }) {
-                BottomBar(currentRoute, expiringState.groups.urgentCount) { tab -> navController.switchTo(tab) }
-            }
-        },
-    ) { padding ->
-        NavHost(
-            navController,
-            startDestination = Tab.LIBRARY.route,
-            // Each screen draws its own top bar; the inset is consumed here so it isn't added twice.
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-        ) {
-            composable(Tab.LIBRARY.route) {
+    /**
+     * A tab's screen with the bottom bar. The bar belongs to each tab screen rather than to the whole
+     * app, so it moves with its screen in every transition. Shown or hidden from outside, it would
+     * pop in only once the system back animation ends (Android's predictive back), and the screen
+     * under it would jump to make room.
+     */
+    @Composable
+    fun TabScreen(tab: Tab, content: @Composable () -> Unit) = Screen(
+        bottomBar = { BottomBar(tab, expiringState.groups.urgentCount) { navController.switchTo(it) } },
+        content = content,
+    )
+
+    NavHost(navController, startDestination = Tab.LIBRARY.route) {
+        composable(Tab.LIBRARY.route) {
+            TabScreen(Tab.LIBRARY) {
                 HomeScreen(
                     onOpenDocument = { id -> navController.navigate(Routes.document(id)) },
                     onOpenBackup = { navController.switchTo(Tab.BACKUP) },
@@ -94,33 +92,45 @@ fun PapyrusNavHost() {
                     onScan = { categoryId -> navController.navigate(Routes.scan(categoryId)) },
                 )
             }
-            composable(Tab.EXPIRING.route) {
+        }
+        composable(Tab.EXPIRING.route) {
+            TabScreen(Tab.EXPIRING) {
                 ExpiringScreen(onOpenDocument = { id -> navController.navigate(Routes.document(id)) })
             }
-            composable(Tab.CATEGORIES.route) { CategoriesScreen() }
-            composable(Tab.BACKUP.route) { BackupScreen() }
-            composable(
-                Routes.SCAN,
-                arguments = listOf(navArgument(Routes.SCAN_CATEGORY) { type = NavType.LongType; defaultValue = -1L }),
-            ) {
-                ScanScreen(onClose = { navController.popBackStack() })
-            }
-            composable(Routes.SETTINGS) { SettingsScreen(onBack = { navController.popBackStack() }) }
-            composable(
-                Routes.DOCUMENT,
-                arguments = listOf(navArgument(Routes.DOCUMENT_ID) { type = NavType.LongType }),
-            ) {
-                DocumentDetailScreen(onBack = { navController.popBackStack() })
-            }
+        }
+        composable(Tab.CATEGORIES.route) { TabScreen(Tab.CATEGORIES) { CategoriesScreen() } }
+        composable(Tab.BACKUP.route) { TabScreen(Tab.BACKUP) { BackupScreen() } }
+        // The bar is for top-level screens only; these have their own back arrow.
+        composable(
+            Routes.SCAN,
+            arguments = listOf(navArgument(Routes.SCAN_CATEGORY) { type = NavType.LongType; defaultValue = -1L }),
+        ) {
+            Screen { ScanScreen(onClose = { navController.popBackStack() }) }
+        }
+        composable(Routes.SETTINGS) { Screen { SettingsScreen(onBack = { navController.popBackStack() }) } }
+        composable(
+            Routes.DOCUMENT,
+            arguments = listOf(navArgument(Routes.DOCUMENT_ID) { type = NavType.LongType }),
+        ) {
+            Screen { DocumentDetailScreen(onBack = { navController.popBackStack() }) }
         }
     }
 }
 
+/** Applies the system bar insets (and the bottom bar, if any) around a screen. */
 @Composable
-private fun BottomBar(currentRoute: String?, urgentCount: Int, onSelect: (Tab) -> Unit) {
+private fun Screen(bottomBar: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+    Scaffold(bottomBar = bottomBar) { padding ->
+        // Each screen draws its own top bar; the inset is consumed here so it isn't added twice.
+        Box(Modifier.padding(padding).consumeWindowInsets(padding)) { content() }
+    }
+}
+
+@Composable
+private fun BottomBar(current: Tab, urgentCount: Int, onSelect: (Tab) -> Unit) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Tab.entries.forEach { tab ->
-            val selected = tab.route == currentRoute
+            val selected = tab == current
             NavigationBarItem(
                 selected = selected,
                 onClick = { onSelect(tab) },
