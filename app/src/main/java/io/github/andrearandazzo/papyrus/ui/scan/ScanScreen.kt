@@ -8,6 +8,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,6 +59,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -211,6 +215,7 @@ fun ScanScreen(onClose: () -> Unit, viewModel: ScanViewModel = viewModel(factory
                     isFirst = index == 0,
                     isLast = index == state.pages.lastIndex,
                     enabled = !state.saving,
+                    onCrop = { viewModel.startCrop(index) },
                     onRotate = { viewModel.rotate(index) },
                     onUp = { viewModel.move(index, -1) },
                     onDown = { viewModel.move(index, +1) },
@@ -229,6 +234,10 @@ fun ScanScreen(onClose: () -> Unit, viewModel: ScanViewModel = viewModel(factory
                 }
             }
         }
+    }
+
+    state.cropIndex?.let { index ->
+        CropEditor(state.pages[index], onDone = viewModel::finishCrop)
     }
 
     if (confirmDiscard) {
@@ -255,6 +264,7 @@ private fun PageRow(
     isFirst: Boolean,
     isLast: Boolean,
     enabled: Boolean,
+    onCrop: () -> Unit,
     onRotate: () -> Unit,
     onUp: () -> Unit,
     onDown: () -> Unit,
@@ -270,13 +280,30 @@ private fun PageRow(
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .padding(10.dp),
     ) {
-        PageThumbnail(page, Modifier.size(width = 72.dp, height = 96.dp))
-        Spacer(Modifier.width(12.dp))
-        Text(
-            stringResource(R.string.scan_page_number, number),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.weight(1f),
-        )
+        val pageLabel = stringResource(R.string.scan_page_number, number)
+        Box {
+            PageThumbnail(
+                page,
+                Modifier
+                    .size(width = 64.dp, height = 86.dp)
+                    .clickable(enabled = enabled, onClickLabel = stringResource(R.string.crop_title), onClick = onCrop)
+                    .semantics { contentDescription = pageLabel },
+            )
+            Text(
+                number.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(4.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .padding(horizontal = 7.dp, vertical = 1.dp),
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onCrop, enabled = enabled) {
+            SymbolIcon(R.drawable.ic_crop, contentDescription = stringResource(R.string.crop_title))
+        }
         IconButton(onClick = onRotate, enabled = enabled) {
             SymbolIcon(R.drawable.ic_rotate, contentDescription = stringResource(R.string.scan_rotate))
         }
@@ -292,12 +319,12 @@ private fun PageRow(
     }
 }
 
-/** A small upright preview of the photo, redrawn when the page is rotated. */
+/** A small preview of the page as it will be saved: upright and cropped. */
 @Composable
 private fun PageThumbnail(page: ScanPage, modifier: Modifier) {
-    val image by produceState<ImageBitmap?>(null, page.path, page.rotation) {
+    val image by produceState<ImageBitmap?>(null, page) {
         value = withContext(Dispatchers.IO) {
-            runCatching { PdfMaker.loadUpright(File(page.path), page.rotation, maxSide = 300).asImageBitmap() }.getOrNull()
+            runCatching { PdfMaker.render(page, maxSide = 500).asImageBitmap() }.getOrNull()
         }
     }
     val shape = MaterialTheme.shapes.small

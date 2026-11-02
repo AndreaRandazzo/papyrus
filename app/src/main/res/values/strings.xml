@@ -267,6 +267,12 @@
     <string name="scan_discard">Discard</string>
     <string name="scan_keep">Keep scanning</string>
 
+    <!-- Cropping scanned pages -->
+    <string name="crop_title">Crop</string>
+    <string name="crop_hint">Drag the four corners onto the corners of the paper</string>
+    <string name="crop_done">Done</string>
+    <string name="crop_whole_photo">Whole photo</string>
+
     <!-- Starter categories, created on first launch. Until renamed they follow the app's language. -->
     <string name="starter_identity">Identity</string>
     <string name="starter_health">Health</string>
