@@ -1,0 +1,1 @@
+New: Folders view to browse categories as folders, sorting in both directions (e.g. Title Z–A), and after importing, an option to delete the original files to free up space. New app icon.

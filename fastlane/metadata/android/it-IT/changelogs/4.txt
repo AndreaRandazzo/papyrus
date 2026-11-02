@@ -1,0 +1,1 @@
+Novità: vista Cartelle per sfogliare le categorie come cartelle, ordinamento nei due sensi (es. Titolo Z–A) e, dopo l'importazione, la possibilità di eliminare i file originali per liberare spazio. Nuova icona.
