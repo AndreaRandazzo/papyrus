@@ -7,10 +7,10 @@
 <p align="center">Your personal documents, organized and private. Fully offline.</p>
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_library.png" width="200" alt="Library">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_expiring.png" width="200" alt="Expiring documents">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_details.png" width="200" alt="Document details">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_dark_grid.png" width="200" alt="Dark theme, grid view">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_folders.png" width="200" alt="Library, Folders view">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_expiring.png" width="200" alt="Expiring documents">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_details.png" width="200" alt="Document details">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_dark_grid.png" width="200" alt="Dark theme, grid view">
 </p>
 
 Papyrus is a free, open-source Android app that keeps your important documents in one tidy
@@ -25,14 +25,18 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 
 ## Features
 
-- Add PDFs, Word files and photos (they're copied into the app, so they survive if the original is deleted)
-- Categories with 32 icons to choose from
+- Add PDFs, Word files and photos (they're copied into the app, so they survive if the original is deleted;
+  Papyrus then offers to delete the originals to free up space)
+- Scan paper documents with the camera into a multi-page PDF, with crop to the paper's corners and rotation
+- Share files to Papyrus from any app
+- Categories with 32 icons to choose from; browse them as folders, or as chips above a list or grid
 - Notes and expiry dates; the **Expiring** tab shows what has expired or expires within 30 days
-- Search titles, notes and categories (case and accents ignored), filter by type and date added, sort by date, title or expiry
-- Previews of PDF pages and photos; list or grid view
+- Search titles, notes and categories (case and accents ignored), filter by type and date added,
+  sort by date, title or expiry in either direction
+- Previews of PDF pages and photos; list, grid or folders view
 - Open and share documents with other apps
 - Backup and restore the whole library as one ZIP file
-- Light and dark theme; English and Italian
+- Light and dark theme; English and Italian; report a bug or request a feature from Settings
 
 ### About backups
 

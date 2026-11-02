@@ -5,12 +5,14 @@
 <p><b>Features</b></p>
 <ul>
 <li>Add PDFs, Word files and photos; they are copied safely into the app</li>
-<li>Organize with categories, each with its own icon</li>
+<li>Scan paper documents with the camera into a multi-page PDF, cropped to the paper's corners</li>
+<li>Share files to Papyrus from any app</li>
+<li>Organize with categories, each with its own icon, and browse them as folders</li>
 <li>Notes and expiry dates for every document</li>
 <li>Expiring tab: see what has expired or expires in the next 30 days</li>
 <li>Fast search across titles, notes and categories (ignores accents)</li>
-<li>Filter by type and date added, sort by date, title or expiry</li>
-<li>Previews of PDF pages and photos, list or grid view</li>
+<li>Filter by type and date added, sort by date, title or expiry in either direction</li>
+<li>Previews of PDF pages and photos, list, grid or folders view</li>
 <li>Open and share documents with other apps</li>
 <li>Backup and restore your whole library as a single file</li>
 <li>Light and dark theme, English and Italian</li>
