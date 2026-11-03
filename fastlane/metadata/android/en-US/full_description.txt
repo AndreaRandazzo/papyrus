@@ -12,7 +12,8 @@
 <li>Notes and expiry dates for every document</li>
 <li>Expiring tab: see what has expired or expires in the next 30 days</li>
 <li>Optional reminders 30 and 7 days before a document expires, and on the day</li>
-<li>Fast search across titles, notes and categories (ignores accents)</li>
+<li>Search inside your documents: Papyrus reads the text of PDFs, scans and photos on the phone (Italian and English), nothing is sent anywhere</li>
+<li>Fast search across titles, notes, categories and that text (ignores accents)</li>
 <li>Filter by type and date added, sort by date, title or expiry in either direction</li>
 <li>Previews of PDF pages and photos, list, grid or folders view</li>
 <li>Open and share documents with other apps</li>

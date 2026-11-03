@@ -1,0 +1,1 @@
+New: search inside your documents. Papyrus reads the text of PDFs, scans and photos on the phone (Italian and English, nothing is sent anywhere); search finds documents by it and shows where. The text is shown in the details, with Copy. Fixed: the "Clear filters" button hidden by the keyboard.

@@ -15,8 +15,8 @@ android {
         applicationId = "io.github.andrearandazzo.papyrus"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.3.0"
+        versionCode = 6
+        versionName = "1.4.0"
     }
 
     // The release key lives outside the project (never in git). Without it the release build is
