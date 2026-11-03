@@ -1,0 +1,1 @@
+Novità: cerca dentro i documenti. Papyrus legge il testo di PDF, scansioni e foto sul telefono (italiano e inglese, senza inviare nulla); la ricerca trova i documenti anche da quel testo e mostra dove. Il testo è nei dettagli, con Copia. Corretto: il pulsante "Cancella filtri" nascosto dalla tastiera.

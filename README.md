@@ -8,8 +8,8 @@
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_folders.png" width="200" alt="Library, Folders view">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_expiring.png" width="200" alt="Expiring documents">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_details.png" width="200" alt="Document details">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/10_search_inside.png" width="200" alt="Search finds words inside documents">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/11_text_inside.png" width="200" alt="Text read from a document">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6_dark_grid.png" width="200" alt="Dark theme, grid view">
 </p>
 
