@@ -242,7 +242,23 @@
 
     <!-- Backup screen -->
     <string name="backup_hero_title">Tieni una copia, non si sa mai</string>
-    <string name="backup_hero_body">Il backup è un unico file, salvato dove preferisci. Non è cifrato, quindi conservalo in un posto sicuro.</string>
+    <string name="backup_hero_body">Il backup è un unico file, salvato dove preferisci. Proteggilo con una password, o conservalo in un posto sicuro.</string>
+    <string name="backup_password_title">Proteggere con una password?</string>
+    <string name="backup_password_body">Con una password il backup è cifrato: solo chi la conosce può aprire il file.</string>
+    <string name="password">Password</string>
+    <string name="password_repeat">Ripeti la password</string>
+    <plurals name="password_too_short">
+        <item quantity="one">Almeno %d carattere</item>
+        <item quantity="many">Almeno %d caratteri</item>
+        <item quantity="other">Almeno %d caratteri</item>
+    </plurals>
+    <string name="password_mismatch">Le password non coincidono</string>
+    <string name="backup_password_warning">Papyrus non può recuperare una password dimenticata: senza, il backup non si può ripristinare. Annotala in un posto sicuro.</string>
+    <string name="backup_save_protected">Salva con password</string>
+    <string name="backup_save_plain">Salva senza</string>
+    <string name="restore_password_title">Backup protetto da password</string>
+    <string name="restore_password_body">Scrivi la password usata quando hai salvato questo backup.</string>
+    <string name="password_wrong">Password sbagliata. Riprova.</string>
     <string name="last_backup">Ultimo backup</string>
     <string name="never">Mai</string>
     <string name="backup_due">Backup consigliato</string>
