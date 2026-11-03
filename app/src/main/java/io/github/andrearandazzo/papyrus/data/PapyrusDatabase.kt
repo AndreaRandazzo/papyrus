@@ -11,8 +11,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * Schemas of every version are kept in `app/schemas/`.
  */
 @Database(
-    entities = [Document::class, Category::class],
-    version = 4,
+    entities = [Document::class, Category::class, DocumentText::class],
+    version = 5,
     autoMigrations = [
         // v2: categories table; category, note and expiry on documents.
         AutoMigration(from = 1, to = 2),
@@ -20,11 +20,14 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AutoMigration(from = 2, to = 3),
         // v4: starter key on categories, so untouched starters follow the app's language.
         AutoMigration(from = 3, to = 4, spec = PapyrusDatabase.MarkStarterCategories::class),
+        // v5: the text inside documents, for searching it. Existing documents get read afterwards.
+        AutoMigration(from = 4, to = 5),
     ],
 )
 abstract class PapyrusDatabase : RoomDatabase() {
     abstract fun documentDao(): DocumentDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun documentTextDao(): DocumentTextDao
 
     /**
      * Older versions stored starter categories as plain names. Marks the ones still named exactly

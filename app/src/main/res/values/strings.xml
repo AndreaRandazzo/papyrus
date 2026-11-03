@@ -271,6 +271,13 @@
     <string name="unlock">Unlock</string>
     <string name="unlock_prompt_title">Unlock Papyrus</string>
     <string name="app_lock_confirm_title">Turn on app lock</string>
+    <string name="text_inside">Text in the document</string>
+    <string name="copy">Copy</string>
+    <string name="text_reading">Reading the text…</string>
+    <string name="text_none">No text found in this document.</string>
+    <string name="show_all">Show all</string>
+    <string name="show_less">Show less</string>
+    <string name="text_inside_note">Read on this phone: nothing is sent anywhere. Search finds documents by this text too.</string>
     <string name="settings_notifications">Notifications</string>
     <string name="expiry_reminders">Expiry reminders</string>
     <string name="expiry_reminders_body">Notify 30 and 7 days before and on the day</string>

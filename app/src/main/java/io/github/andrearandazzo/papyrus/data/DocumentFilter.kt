@@ -30,7 +30,7 @@ data class SortOrder(val field: SortField = SortField.ADDED, val ascending: Bool
  * What the user is looking for. Pure Kotlin, so the rules are easy to unit test.
  */
 data class DocumentFilter(
-    /** Words to find in the title, note or category name. Case and accents are ignored. */
+    /** Words to find in the title, note, category name or the text inside. Case and accents are ignored. */
     val query: String = "",
     /** null means every category; [NO_CATEGORY] means documents without one. */
     val categoryId: Long? = null,
@@ -48,10 +48,12 @@ data class DocumentFilter(
     val isFiltering: Boolean
         get() = query.isNotBlank() || categoryId != null || panelFilterCount > 0
 
+    /** [contents] is the text inside each document, by id, already passed through [searchable]. */
     fun apply(
         documents: List<Document>,
         categories: List<Category>,
         zone: ZoneId = ZoneId.systemDefault(),
+        contents: Map<Long, String> = emptyMap(),
     ): List<Document> {
         val categoryNames = categories.associate { it.id to it.name }
         val terms = normalize(query).split(WHITESPACE).filter { it.isNotEmpty() }
@@ -61,7 +63,7 @@ data class DocumentFilter(
                 isInCategory(document) &&
                     (kinds.isEmpty() || document.kind in kinds) &&
                     isAddedInRange(document, zone) &&
-                    matchesAll(document, categoryNames[document.categoryId], terms)
+                    matchesAll(document, categoryNames[document.categoryId], contents[document.id], terms)
             }
             .sortedWith(comparator())
     }
@@ -78,11 +80,34 @@ data class DocumentFilter(
         return (addedFrom == null || !day.isBefore(addedFrom)) && (addedTo == null || !day.isAfter(addedTo))
     }
 
-    /** Every search word must appear somewhere, in any order. */
-    private fun matchesAll(document: Document, categoryName: String?, terms: List<String>): Boolean {
+    /** Every search word must appear somewhere, in any order: in the details or the text inside. */
+    private fun matchesAll(document: Document, categoryName: String?, content: String?, terms: List<String>): Boolean {
         if (terms.isEmpty()) return true
-        val searchable = normalize(listOfNotNull(document.title, document.note, categoryName).joinToString(" "))
-        return terms.all { it in searchable }
+        val details = normalize(listOfNotNull(document.title, document.note, categoryName).joinToString(" "))
+        return terms.all { it in details || (content != null && it in content) }
+    }
+
+    /**
+     * A short piece of [text] around the first search word, for results found by what's written
+     * inside a document: "…Codice cliente: 4815162342…". Null if no word is in the text.
+     */
+    fun snippet(text: String, radius: Int = 40): String? {
+        val terms = normalize(query).split(WHITESPACE).filter { it.isNotEmpty() }
+        if (terms.isEmpty()) return null
+        // Normalize letter by letter, remembering where each normalized letter came from.
+        val normalized = StringBuilder()
+        val origin = ArrayList<Int>()
+        text.forEachIndexed { i, c ->
+            normalize(c.toString()).forEach { normalized.append(it); origin.add(i) }
+        }
+        val at = terms.map { normalized.indexOf(it) }.filter { it >= 0 }.minOrNull() ?: return null
+        // About [radius] letters on each side, without cutting words in half.
+        var start = (origin[at] - radius).coerceAtLeast(0)
+        if (start > 0) start = text.indexOf(' ', start).let { if (it in start until origin[at]) it + 1 else origin[at] }
+        var end = (origin[at] + radius).coerceAtMost(text.length)
+        if (end < text.length) end = text.lastIndexOf(' ', end).let { if (it > origin[at]) it else end }
+        val piece = text.substring(start, end).replace(WHITESPACE, " ").trim()
+        return (if (start > 0) "…" else "") + piece + (if (end < text.length) "…" else "")
     }
 
     private fun comparator(): Comparator<Document> {
@@ -104,6 +129,9 @@ data class DocumentFilter(
 
         private val WHITESPACE = Regex("\\s+")
         private val COMBINING_MARKS = Regex("\\p{Mn}+")
+
+        /** The form [apply] expects for the text inside documents; done once, not on every search. */
+        fun searchable(text: String): String = normalize(text)
 
         /** "Città" and "citta" both become "citta". */
         private fun normalize(text: String): String =

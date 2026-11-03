@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Release builds ship only 64-bit ARM (see app/build.gradle.kts): x86 Chromebooks aren't a target. -->
+    <issue id="ChromeOsAbiSupport" severity="ignore" />
+</lint>

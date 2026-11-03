@@ -16,6 +16,11 @@ import io.github.andrearandazzo.papyrus.data.UserPreferences
 import io.github.andrearandazzo.papyrus.data.backup.BackupManager
 import io.github.andrearandazzo.papyrus.lock.AppLock
 import io.github.andrearandazzo.papyrus.reminders.ExpiryReminders
+import io.github.andrearandazzo.papyrus.text.Ocr
+import io.github.andrearandazzo.papyrus.text.TextReader
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 /** Creates the app-wide singletons once, when first needed. */
@@ -31,6 +36,10 @@ class PapyrusApp : Application() {
     val thumbnails by lazy { ThumbnailLoader(documentRepository) }
     val backupManager by lazy { BackupManager(this, database, documentRepository) }
     val preferences by lazy { UserPreferences(this) }
+    val documentTexts by lazy { database.documentTextDao() }
+
+    /** Lives as long as the app process: background work that isn't tied to a screen. */
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     lateinit var appLock: AppLock
         private set
 
@@ -40,6 +49,7 @@ class PapyrusApp : Application() {
         registerActivityLifecycleCallbacks(appLock)
         // Keeps the daily check set, e.g. after the app was updated (alarms are cleared then).
         if (preferences.expiryReminders.value) ExpiryReminders.schedule(this)
+        TextReader(documentTexts, documentRepository, Ocr(this)).start(appScope)
     }
 
     /** On a fresh install, start with a few useful categories in the app's language. */

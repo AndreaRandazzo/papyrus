@@ -15,6 +15,8 @@ import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
+import io.github.andrearandazzo.papyrus.data.DocumentText
+import io.github.andrearandazzo.papyrus.data.DocumentTextDao
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -36,9 +38,14 @@ class DocumentDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val documentRepository: DocumentRepository,
     categoryRepository: CategoryRepository,
+    documentTexts: DocumentTextDao,
 ) : ViewModel() {
 
     private val documentId: Long = checkNotNull(savedStateHandle["documentId"])
+
+    /** The text inside the document; null while it's still being read (updates by itself). */
+    val text: StateFlow<DocumentText?> = documentTexts.observe(documentId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val categories: StateFlow<List<Category>> = categoryRepository.categories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -102,7 +109,7 @@ class DocumentDetailViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as PapyrusApp
-                DocumentDetailViewModel(createSavedStateHandle(), app.documentRepository, app.categoryRepository)
+                DocumentDetailViewModel(createSavedStateHandle(), app.documentRepository, app.categoryRepository, app.documentTexts)
             }
         }
     }

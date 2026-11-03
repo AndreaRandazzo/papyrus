@@ -38,6 +38,8 @@ android {
         debug {
             // Lets a test build sit next to the real app on the same phone.
             applicationIdSuffix = ".debug"
+            // Text recognition is native code: phones, plus PC emulators (x86_64) for testing.
+            ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         }
         release {
             isMinifyEnabled = true
@@ -47,6 +49,9 @@ android {
                 "proguard-rules.pro",
             )
             signingConfig = signingConfigs.findByName("release")
+            // 64-bit phones only (every phone of the last years): the recognition engine is native
+            // code, and each extra processor type would add about 3 MB. Not for x86 Chromebooks.
+            ndk { abiFilters += listOf("arm64-v8a") }
         }
     }
 
@@ -54,6 +59,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // Native code compressed in the APK: about half the download, unpacked once at install.
+    packaging { jniLibs { useLegacyPackaging = true } }
 
     buildFeatures {
         compose = true
@@ -95,6 +103,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // Text recognition (Tesseract, Apache-2.0), only on JitPack; see settings.gradle.kts.
+    implementation(libs.tesseract4android)
     testImplementation(libs.junit)
     testImplementation(libs.org.json)
 }

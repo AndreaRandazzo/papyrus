@@ -23,10 +23,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -49,15 +51,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -65,9 +71,11 @@ import io.github.andrearandazzo.papyrus.PapyrusApp
 import io.github.andrearandazzo.papyrus.R
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
+import io.github.andrearandazzo.papyrus.data.DocumentText
 import io.github.andrearandazzo.papyrus.ui.DocumentIntents
 import io.github.andrearandazzo.papyrus.ui.components.DateField
 import io.github.andrearandazzo.papyrus.ui.components.DocumentPlaceholder
+import io.github.andrearandazzo.papyrus.ui.components.SectionLabel
 import io.github.andrearandazzo.papyrus.ui.components.SymbolIcon
 import io.github.andrearandazzo.papyrus.ui.components.categoryStyle
 import io.github.andrearandazzo.papyrus.ui.formatInstantDate
@@ -151,6 +159,8 @@ fun DocumentDetailScreen(
                     onOpen = open,
                     onShare = share,
                 )
+                val text by viewModel.text.collectAsStateWithLifecycle()
+                TextInside(text)
             }
         }
     }
@@ -304,6 +314,80 @@ private fun DocumentForm(
         )
     }
 }
+
+/**
+ * "Text in the document": what was read from it (PDF text or recognized on the phone), selectable
+ * and with a copy button. Long texts show their beginning and expand on request. While it's being
+ * read, a short note says so; it fills in by itself.
+ */
+@Composable
+private fun TextInside(text: DocumentText?) {
+    val clipboard = LocalClipboardManager.current
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(stringResource(R.string.text_inside), Modifier.weight(1f))
+            if (!text?.text.isNullOrBlank()) {
+                TextButton(onClick = { clipboard.setText(AnnotatedString(text!!.text)) }) {
+                    SymbolIcon(R.drawable.ic_copy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.copy))
+                }
+            }
+        }
+        when {
+            text == null -> Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    stringResource(R.string.text_reading),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            text.text.isBlank() -> Text(
+                stringResource(R.string.text_none),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+            else -> {
+                val long = text.text.lines().size > COLLAPSED_LINES
+                SelectionContainer {
+                    Text(
+                        text.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = if (long && !expanded) COLLAPSED_LINES else Int.MAX_VALUE,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.small)
+                            .padding(12.dp),
+                    )
+                }
+                if (long) {
+                    TextButton(onClick = { expanded = !expanded }) {
+                        Text(stringResource(if (expanded) R.string.show_less else R.string.show_all))
+                    }
+                }
+            }
+        }
+        Text(
+            stringResource(R.string.text_inside_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
+/** Lines of a long text shown before "Show all". */
+private const val COLLAPSED_LINES = 12
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

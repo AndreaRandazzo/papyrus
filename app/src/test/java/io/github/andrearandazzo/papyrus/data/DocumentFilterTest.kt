@@ -101,4 +101,22 @@ class DocumentFilterTest {
         assertEquals(true, SortOrder(SortField.EXPIRY).ascending) // soonest first
         assertEquals(SortOrder(SortField.TITLE, ascending = false), SortOrder(SortField.TITLE).reversed())
     }
+
+    @Test
+    fun searchLooksInsideDocuments() {
+        val contents = mapOf(2L to DocumentFilter.searchable("Emocromo: Ematocrito 41%, Glicemia 88 mg/dL"))
+        fun found(query: String) = DocumentFilter(query = query).apply(all, categories, ZoneOffset.UTC, contents).map { it.id }
+        assertEquals(listOf(2L), found("glicemia"))
+        assertEquals(listOf(2L), found("salute EMATOCRITO")) // one word in the category, one inside
+        assertEquals(emptyList<Long>(), found("glicemia polizza"))
+    }
+
+    @Test
+    fun snippetShowsTheWordInContext() {
+        val text = "BOLLETTA LUCE\nIntestatario: Mario Rossi\nCodice cliente: 4815162342\nScadenza pagamento: 15 dicembre 2026"
+        assertEquals("…Rossi Codice cliente: 4815162342 Scadenza…", DocumentFilter(query = "4815162342").snippet(text, radius = 25))
+        // Accents and case don't matter, and the original text is shown.
+        assertEquals("Città di Torino", DocumentFilter(query = "CITTA").snippet("Città di Torino", radius = 40))
+        assertEquals(null, DocumentFilter(query = "assente").snippet(text))
+    }
 }

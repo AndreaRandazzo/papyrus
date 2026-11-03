@@ -36,8 +36,10 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 - Optional app lock with your fingerprint, face or phone PIN; the recent-apps screen shows a blank card
 - Notes and expiry dates; the **Expiring** tab shows what has expired or expires within 30 days
 - Optional expiry reminders: a notification 30 and 7 days before and on the day
-- Search titles, notes and categories (case and accents ignored), filter by type and date added,
+- Search titles, notes, categories and the text inside documents (case and accents ignored), filter by type and date added,
   sort by date, title or expiry in either direction
+- Reads the text inside documents on the phone: from PDFs directly, from photos and scans with on-device
+  text recognition (Italian and English). Nothing is sent anywhere
 - Previews of PDF pages and photos; list, grid or folders view
 - Open and share documents with other apps
 - Backup and restore the whole library as one ZIP file
@@ -83,5 +85,7 @@ Papyrus is licensed under the [GNU General Public License v3.0](LICENSE).
 Third-party assets:
 - [Phosphor Icons](https://phosphoricons.com), MIT License ([licenses/Phosphor-MIT.txt](licenses/Phosphor-MIT.txt))
 - [Nunito Sans](https://github.com/Fonthausen/NunitoSans), SIL Open Font License 1.1 ([licenses/NunitoSans-OFL.txt](licenses/NunitoSans-OFL.txt))
+- Text recognition: [Tesseract](https://github.com/tesseract-ocr/tesseract) via [Tesseract4Android](https://github.com/adaptech-cz/Tesseract4Android), Apache License 2.0 ([licenses/Tesseract-Apache-2.0.txt](licenses/Tesseract-Apache-2.0.txt), [licenses/Tesseract4Android-Apache-2.0.txt](licenses/Tesseract4Android-Apache-2.0.txt)), with [Leptonica](http://leptonica.org) (BSD 2-Clause, [licenses/Leptonica-BSD-2-Clause.txt](licenses/Leptonica-BSD-2-Clause.txt)), [libjpeg](https://ijg.org) ([licenses/libjpeg-IJG.txt](licenses/libjpeg-IJG.txt)) and [libpng](http://libpng.org) ([licenses/libpng-License.txt](licenses/libpng-License.txt))
+- Italian and English text models: [tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast), Apache License 2.0
 
 The documents in the screenshots are fictional samples.
