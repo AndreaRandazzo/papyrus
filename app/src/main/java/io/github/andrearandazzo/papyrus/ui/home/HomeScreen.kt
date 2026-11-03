@@ -11,13 +11,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,9 +31,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -74,6 +80,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -444,9 +451,9 @@ private fun Documents(state: HomeState, grid: Boolean, actions: DocumentActions,
             // A new sort order starts again from the top instead of following the visible item.
             key(state.filter.sort) {
                 if (grid) {
-                    DocumentGrid(state.documents, categoryNames, actions)
+                    DocumentGrid(state.documents, categoryNames, state.snippets, actions)
                 } else {
-                    DocumentList(state.documents, categoryNames, actions)
+                    DocumentList(state.documents, categoryNames, state.snippets, actions)
                 }
             }
         }
@@ -540,7 +547,12 @@ private fun SortControls(sort: SortOrder, onSort: (SortOrder) -> Unit) {
 }
 
 @Composable
-private fun DocumentList(documents: List<Document>, categoryNames: Map<Long, String>, actions: DocumentActions) {
+private fun DocumentList(
+    documents: List<Document>,
+    categoryNames: Map<Long, String>,
+    snippets: Map<Long, String>,
+    actions: DocumentActions,
+) {
     // Bottom padding keeps the last row clear of the "+" button.
     LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
         items(documents, key = { it.id }) { document ->
@@ -554,7 +566,7 @@ private fun DocumentList(documents: List<Document>, categoryNames: Map<Long, Str
                 DocumentTile(document, Modifier.size(width = 64.dp, height = 76.dp))
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    DocumentText(document, categoryNames[document.categoryId])
+                    DocumentText(document, categoryNames[document.categoryId], snippets[document.id])
                 }
                 DocumentMenu(document, actions)
             }
@@ -564,7 +576,12 @@ private fun DocumentList(documents: List<Document>, categoryNames: Map<Long, Str
 }
 
 @Composable
-private fun DocumentGrid(documents: List<Document>, categoryNames: Map<Long, String>, actions: DocumentActions) {
+private fun DocumentGrid(
+    documents: List<Document>,
+    categoryNames: Map<Long, String>,
+    snippets: Map<Long, String>,
+    actions: DocumentActions,
+) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 150.dp),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
@@ -582,7 +599,7 @@ private fun DocumentGrid(documents: List<Document>, categoryNames: Map<Long, Str
                 // Inset so text near the bottom corners isn't clipped by the card's rounded shape.
                 Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)) {
                     Column(Modifier.weight(1f).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DocumentText(document, categoryNames[document.categoryId], compact = true)
+                        DocumentText(document, categoryNames[document.categoryId], snippets[document.id], compact = true)
                     }
                     DocumentMenu(document, actions)
                 }
@@ -591,9 +608,12 @@ private fun DocumentGrid(documents: List<Document>, categoryNames: Map<Long, Str
     }
 }
 
-/** Title, "Identity · PDF · 2.4 MB · 8 Mar 2024", and the expiry if set. */
+/**
+ * Title, "Identity · PDF · 2.4 MB · 8 Mar 2024", the expiry if set, and for a search found inside
+ * the document, the words around the match.
+ */
 @Composable
-private fun DocumentText(document: Document, categoryName: String?, compact: Boolean = false) {
+private fun DocumentText(document: Document, categoryName: String?, snippet: String?, compact: Boolean = false) {
     val context = LocalContext.current
     Text(
         document.title,
@@ -618,6 +638,16 @@ private fun DocumentText(document: Document, categoryName: String?, compact: Boo
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
+    snippet?.let {
+        Text(
+            it,
+            style = MaterialTheme.typography.bodySmall,
+            fontStyle = FontStyle.Italic,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
     document.expiresAt?.let { expiry ->
         val expired = daysUntil(expiry) < 0
         val color = if (expired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
@@ -733,6 +763,7 @@ private fun FirstLaunch(onAdd: () -> Unit, onRestore: () -> Unit, busy: Boolean)
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EmptyState(
     illustration: Int,
@@ -742,13 +773,29 @@ private fun EmptyState(
     actionLabel: String,
     onAction: () -> Unit,
 ) {
+    // Often shown while typing a search. With the keyboard open it stays above it, without the
+    // picture, so the message and the button stay visible; it can scroll if that's still too much.
+    val keyboardOpen = WindowInsets.isImeVisible
     Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 32.dp, vertical = if (keyboardOpen) 16.dp else 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(48.dp))
-        PaperIllustration(illustration, backColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-        Spacer(Modifier.height(28.dp))
+        if (!keyboardOpen) {
+            Spacer(Modifier.height(16.dp))
+            PaperIllustration(illustration, backColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+            Spacer(Modifier.height(28.dp))
+        }
+        EmptyStateText(title, body, actionIcon, actionLabel, onAction)
+    }
+}
+
+@Composable
+private fun EmptyStateText(title: String, body: String, actionIcon: Int, actionLabel: String, onAction: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
         Text(

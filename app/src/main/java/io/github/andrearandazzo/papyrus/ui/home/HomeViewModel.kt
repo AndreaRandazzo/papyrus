@@ -16,6 +16,7 @@ import io.github.andrearandazzo.papyrus.data.CategoryRepository
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentFilter
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
+import io.github.andrearandazzo.papyrus.data.DocumentTextDao
 import io.github.andrearandazzo.papyrus.data.Folder
 import io.github.andrearandazzo.papyrus.data.ImportResult
 import io.github.andrearandazzo.papyrus.data.LibraryView
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -46,15 +48,21 @@ data class HomeState(
     val libraryEmpty: Boolean = true,
     /** Every category as a folder, for the Folders view. */
     val folders: List<Folder> = emptyList(),
+    /** For results found only by the text inside: the words around the match, by document id. */
+    val snippets: Map<Long, String> = emptyMap(),
 ) {
     /** The folder open in the Folders view, if any. */
     val openFolder: Folder? get() = filter.categoryId?.let { id -> folders.firstOrNull { it.filterId == id } }
 }
 
+/** The text inside documents, as read and in the form search compares against, by document id. */
+private class Contents(val text: Map<Long, String> = emptyMap(), val searchable: Map<Long, String> = emptyMap())
+
 class HomeViewModel(
     private val documentRepository: DocumentRepository,
     categoryRepository: CategoryRepository,
     private val preferences: UserPreferences,
+    documentTexts: DocumentTextDao,
 ) : ViewModel() {
 
     /** List, grid or folders; remembered across app restarts. */
@@ -75,12 +83,21 @@ class HomeViewModel(
 
     private val filter = MutableStateFlow(DocumentFilter(sort = preferences.sortOrder))
 
+    // Prepared once whenever a text is read, not on every keystroke.
+    private val contents = documentTexts.observeAll()
+        .map { rows ->
+            val text = rows.filter { it.text.isNotBlank() }.associate { it.documentId to it.text }
+            Contents(text, text.mapValues { DocumentFilter.searchable(it.value) })
+        }
+        .flowOn(Dispatchers.Default)
+
     val state: StateFlow<HomeState> = combine(
         documentRepository.documents,
         categoryRepository.categories,
         filter,
         snapshotFlow { query },
-    ) { documents, categories, filter, query ->
+        contents,
+    ) { documents, categories, filter, query, contents ->
         // If the selected category was deleted, fall back to "All".
         val effective = filter.copy(
             query = query,
@@ -88,8 +105,19 @@ class HomeViewModel(
                 id == DocumentFilter.NO_CATEGORY || categories.any { it.id == id }
             },
         )
+        val found = effective.apply(documents, categories, contents = contents.searchable)
+        // Results the title, note or category alone wouldn't find show where the words are inside.
+        val snippets = if (effective.query.isBlank()) {
+            emptyMap()
+        } else {
+            val byDetails = effective.apply(documents, categories).map { it.id }.toSet()
+            found.filter { it.id !in byDetails }
+                .mapNotNull { document -> contents.text[document.id]?.let(effective::snippet)?.let { document.id to it } }
+                .toMap()
+        }
         HomeState(
-            documents = effective.apply(documents, categories),
+            documents = found,
+            snippets = snippets,
             categories = categories,
             filter = effective,
             libraryEmpty = documents.isEmpty(),
@@ -176,7 +204,7 @@ class HomeViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as PapyrusApp
-                HomeViewModel(app.documentRepository, app.categoryRepository, app.preferences)
+                HomeViewModel(app.documentRepository, app.categoryRepository, app.preferences, app.documentTexts)
             }
         }
     }
