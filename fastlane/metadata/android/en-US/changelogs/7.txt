@@ -1,0 +1,1 @@
+New: password-protected backups (AES-256: only someone with the password can open the file), and attachments: keep several files in one document, like a contract and its annexes or both sides of an ID card. Replace a document's file with a newer one, keeping its details. Search also finds words inside attachments.
