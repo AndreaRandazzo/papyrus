@@ -1,6 +1,8 @@
 package io.github.andrearandazzo.papyrus.ui.detail
 
 import android.text.format.Formatter
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,6 +61,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.andrearandazzo.papyrus.PapyrusApp
 import io.github.andrearandazzo.papyrus.R
+import io.github.andrearandazzo.papyrus.data.Attachment
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentText
@@ -99,6 +103,37 @@ fun DocumentDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var confirmDelete by remember { mutableStateOf(false) }
     val noAppMessage = stringResource(R.string.no_app_to_open)
+    val resources = LocalResources.current
+    val attachments by viewModel.attachments.collectAsStateWithLifecycle()
+    var removing by remember { mutableStateOf<Attachment?>(null) }
+    var confirmReplace by remember { mutableStateOf(false) }
+
+    // The system picker: no storage permission, the user chooses exactly which files.
+    val attachPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments(), viewModel::addAttachments)
+    val replacePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(viewModel::replaceFile)
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            snackbarHostState.showSnackbar(
+                when (event) {
+                    DetailEvent.FileReplaced -> resources.getString(R.string.file_replaced)
+                    is DetailEvent.FilesFailed -> resources.getQuantityString(R.plurals.import_failed, event.count, event.count)
+                },
+            )
+        }
+    }
+
+    val openAttachment: (Attachment) -> Unit = { attachment ->
+        scope.launch {
+            val file = viewModel.fileForOtherApps(attachment)
+            if (!DocumentIntents.open(context, file, attachment.mimeType)) snackbarHostState.showSnackbar(noAppMessage)
+        }
+    }
+    val shareAttachment: (Attachment) -> Unit = { attachment ->
+        scope.launch { DocumentIntents.share(context, viewModel.fileForOtherApps(attachment), attachment.mimeType) }
+    }
 
     // Leave once saved or deleted, or if the document disappeared.
     LaunchedEffect(viewModel.saved, viewModel.deleted, viewModel.notFound) {
@@ -159,10 +194,55 @@ fun DocumentDetailScreen(
                     onOpen = open,
                     onShare = share,
                 )
+                AttachmentsSection(
+                    attachments = attachments,
+                    working = viewModel.working,
+                    onAdd = { attachPicker.launch(DocumentIntents.IMPORTABLE_TYPES) },
+                    onReplace = { confirmReplace = true },
+                    onOpen = openAttachment,
+                    onShare = shareAttachment,
+                    onRemove = { removing = it },
+                )
                 val text by viewModel.text.collectAsStateWithLifecycle()
                 TextInside(text)
             }
         }
+    }
+
+    removing?.let { attachment ->
+        AlertDialog(
+            onDismissRequest = { removing = null },
+            icon = { SymbolIcon(R.drawable.ic_delete, contentDescription = null) },
+            title = { Text(stringResource(R.string.remove_attachment_title, attachment.name)) },
+            text = { Text(stringResource(R.string.remove_attachment_body)) },
+            confirmButton = {
+                Button(onClick = {
+                    removing = null
+                    viewModel.removeAttachment(attachment)
+                }) { Text(stringResource(R.string.remove)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { removing = null }) { Text(stringResource(android.R.string.cancel)) }
+            },
+        )
+    }
+
+    if (confirmReplace) {
+        AlertDialog(
+            onDismissRequest = { confirmReplace = false },
+            icon = { SymbolIcon(R.drawable.ic_replace, contentDescription = null) },
+            title = { Text(stringResource(R.string.replace_file_title)) },
+            text = { Text(stringResource(R.string.replace_file_body)) },
+            confirmButton = {
+                Button(onClick = {
+                    confirmReplace = false
+                    replacePicker.launch(DocumentIntents.IMPORTABLE_TYPES)
+                }) { Text(stringResource(R.string.replace_file_choose)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmReplace = false }) { Text(stringResource(android.R.string.cancel)) }
+            },
+        )
     }
 
     if (confirmDelete && document != null) {

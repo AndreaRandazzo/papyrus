@@ -38,10 +38,17 @@ interface DocumentTextDao {
     @Query("SELECT * FROM document_text WHERE documentId = :id")
     fun observe(id: Long): Flow<DocumentText?>
 
+    @Query("SELECT * FROM documents WHERE id NOT IN (SELECT documentId FROM document_text) ORDER BY importedAt")
+    suspend fun getUnread(): List<Document>
+
     /** Documents whose text hasn't been read yet, oldest first. */
     @Query("SELECT * FROM documents WHERE id NOT IN (SELECT documentId FROM document_text) ORDER BY importedAt")
     fun observeUnread(): Flow<List<Document>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(text: DocumentText)
+
+    /** The document's files changed: its text is read again. */
+    @Query("DELETE FROM document_text WHERE documentId = :id")
+    suspend fun forget(id: Long)
 }

@@ -9,6 +9,7 @@
 <li>Share files to Papyrus from any app</li>
 <li>Organize with categories, each with its own icon, and browse them as folders</li>
 <li>Optional app lock with your fingerprint, face or phone PIN</li>
+<li>Attachments: keep several files together, like a contract and its annexes</li>
 <li>Notes and expiry dates for every document</li>
 <li>Expiring tab: see what has expired or expires in the next 30 days</li>
 <li>Optional reminders 30 and 7 days before a document expires, and on the day</li>

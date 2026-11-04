@@ -286,6 +286,21 @@
     <string name="unlock">Unlock</string>
     <string name="unlock_prompt_title">Unlock Papyrus</string>
     <string name="app_lock_confirm_title">Turn on app lock</string>
+    <string name="attachments">Attachments</string>
+    <string name="attachments_none">No attachments yet: add annexes, receipts or other files that belong with this document.</string>
+    <string name="attachments_add">Add attachments</string>
+    <string name="replace_file">Replace file</string>
+    <string name="attachment_actions">Actions for %s</string>
+    <string name="remove_attachment_title">Remove “%s”?</string>
+    <string name="remove_attachment_body">The attachment will be removed from Papyrus. This can\'t be undone.</string>
+    <string name="replace_file_title">Replace the file?</string>
+    <string name="replace_file_body">Choose the new file, e.g. a renewed document. Title, category, note, expiry and attachments stay; the current file is removed from Papyrus.</string>
+    <string name="replace_file_choose">Choose file</string>
+    <string name="file_replaced">File replaced</string>
+    <plurals name="attachment_count">
+        <item quantity="one">+%d attachment</item>
+        <item quantity="other">+%d attachments</item>
+    </plurals>
     <string name="text_inside">Text in the document</string>
     <string name="copy">Copy</string>
     <string name="text_reading">Reading the text…</string>

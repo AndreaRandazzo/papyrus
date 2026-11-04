@@ -50,13 +50,19 @@ data class HomeState(
     val folders: List<Folder> = emptyList(),
     /** For results found only by the text inside: the words around the match, by document id. */
     val snippets: Map<Long, String> = emptyMap(),
+    /** How many attachments each document has, by id (absent means none). */
+    val attachmentCounts: Map<Long, Int> = emptyMap(),
 ) {
     /** The folder open in the Folders view, if any. */
     val openFolder: Folder? get() = filter.categoryId?.let { id -> folders.firstOrNull { it.filterId == id } }
 }
 
 /** The text inside documents, as read and in the form search compares against, by document id. */
-private class Contents(val text: Map<Long, String> = emptyMap(), val searchable: Map<Long, String> = emptyMap())
+private class Contents(
+    val text: Map<Long, String> = emptyMap(),
+    val searchable: Map<Long, String> = emptyMap(),
+    val attachmentCounts: Map<Long, Int> = emptyMap(),
+)
 
 class HomeViewModel(
     private val documentRepository: DocumentRepository,
@@ -87,8 +93,9 @@ class HomeViewModel(
     private val contents = documentTexts.observeAll()
         .map { rows ->
             val text = rows.filter { it.text.isNotBlank() }.associate { it.documentId to it.text }
-            Contents(text, text.mapValues { DocumentFilter.searchable(it.value) })
+            text to text.mapValues { DocumentFilter.searchable(it.value) }
         }
+        .combine(documentRepository.attachmentCounts) { (text, searchable), counts -> Contents(text, searchable, counts) }
         .flowOn(Dispatchers.Default)
 
     val state: StateFlow<HomeState> = combine(
@@ -118,6 +125,7 @@ class HomeViewModel(
         HomeState(
             documents = found,
             snippets = snippets,
+            attachmentCounts = contents.attachmentCounts,
             categories = categories,
             filter = effective,
             libraryEmpty = documents.isEmpty(),

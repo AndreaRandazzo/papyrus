@@ -1,5 +1,6 @@
 package io.github.andrearandazzo.papyrus.data.backup
 
+import io.github.andrearandazzo.papyrus.data.Attachment
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.StarterCategories
@@ -19,7 +20,16 @@ object BackupFormat {
     const val MANIFEST = "manifest.json"
     const val FILES_DIR = "files/"
 
-    fun toJson(categories: List<Category>, documents: List<Document>, createdAt: Long): String =
+    /**
+     * [attachments] are by document id. Their list is a field older versions of Papyrus don't know:
+     * they restore the documents and ignore it, so the format number stays the same.
+     */
+    fun toJson(
+        categories: List<Category>,
+        documents: List<Document>,
+        createdAt: Long,
+        attachments: Map<Long, List<Attachment>> = emptyMap(),
+    ): String =
         JSONObject()
             .put("app", "Papyrus")
             .put("format", VERSION)
@@ -46,6 +56,19 @@ object BackupFormat {
                             .put("categoryId", document.categoryId ?: JSONObject.NULL)
                             .put("note", document.note)
                             .put("expiresAt", document.expiresAt ?: JSONObject.NULL)
+                            .put(
+                                "attachments",
+                                JSONArray(
+                                    attachments[document.id].orEmpty().map { attachment ->
+                                        JSONObject()
+                                            .put("name", attachment.name)
+                                            .put("file", attachment.fileName)
+                                            .put("mimeType", attachment.mimeType)
+                                            .put("sizeBytes", attachment.sizeBytes)
+                                            .put("addedAt", attachment.addedAt)
+                                    },
+                                ),
+                            )
                     },
                 ),
             )
@@ -73,9 +96,7 @@ object BackupFormat {
         }
         val categoryIds = categories.map { it.id }.toSet()
         val documents = root.getJSONArray("documents").objects().map {
-            val file = it.getString("file")
-            // Only plain names we wrote ourselves; never paths.
-            if (!SAFE_FILE_NAME.matches(file)) throw InvalidBackupException("Bad file name")
+            val file = safeFile(it.getString("file"))
             BackupDocument(
                 title = it.getString("title"),
                 file = file,
@@ -85,9 +106,20 @@ object BackupFormat {
                 categoryId = it.optLongOrNull("categoryId")?.takeIf { id -> id in categoryIds },
                 note = it.optString("note", ""),
                 expiresAt = it.optLongOrNull("expiresAt"),
+                // Missing in backups made before attachments existed.
+                attachments = it.optJSONArray("attachments")?.objects().orEmpty().map { a ->
+                    BackupAttachment(
+                        name = a.getString("name"),
+                        file = safeFile(a.getString("file")),
+                        mimeType = a.getString("mimeType"),
+                        sizeBytes = a.getLong("sizeBytes"),
+                        addedAt = a.getLong("addedAt"),
+                    )
+                },
             )
         }
-        if (documents.map { it.file }.toSet().size != documents.size) {
+        val allFiles = documents.flatMap { document -> listOf(document.file) + document.attachments.map { it.file } }
+        if (allFiles.toSet().size != allFiles.size) {
             throw InvalidBackupException("Duplicate file names")
         }
         BackupManifest(categories, documents)
@@ -96,6 +128,10 @@ object BackupFormat {
     }
 
     private val SAFE_FILE_NAME = Regex("[A-Za-z0-9._-]{1,200}")
+
+    /** Only plain names we wrote ourselves; never paths. */
+    private fun safeFile(name: String): String =
+        name.takeIf(SAFE_FILE_NAME::matches) ?: throw InvalidBackupException("Bad file name")
 
     private fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }
 
@@ -117,6 +153,16 @@ data class BackupDocument(
     val categoryId: Long?,
     val note: String,
     val expiresAt: Long?,
+    val attachments: List<BackupAttachment> = emptyList(),
+)
+
+data class BackupAttachment(
+    val name: String,
+    /** Name of the file inside the backup's `files/` folder. */
+    val file: String,
+    val mimeType: String,
+    val sizeBytes: Long,
+    val addedAt: Long,
 )
 
 class InvalidBackupException(message: String, cause: Throwable? = null) : Exception(message, cause)

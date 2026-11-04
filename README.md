@@ -34,6 +34,7 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
 - Share files to Papyrus from any app
 - Categories with 32 icons to choose from; browse them as folders, or as chips above a list or grid
 - Optional app lock with your fingerprint, face or phone PIN; the recent-apps screen shows a blank card
+- Attachments: several files per document (a contract and its annexes), and replace a document's file with a newer one
 - Notes and expiry dates; the **Expiring** tab shows what has expired or expires within 30 days
 - Optional expiry reminders: a notification 30 and 7 days before and on the day
 - Search titles, notes, categories and the text inside documents (case and accents ignored), filter by type and date added,

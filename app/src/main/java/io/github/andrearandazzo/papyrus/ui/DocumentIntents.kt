@@ -9,6 +9,14 @@ import java.io.File
 
 /** Hands a document file to other apps, granting them read access to that one file only. */
 object DocumentIntents {
+    /** File types offered in the system file picker, for documents and attachments. */
+    val IMPORTABLE_TYPES = arrayOf(
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "image/*",
+    )
+
 
     /** Returns false if no installed app can open this type of file. */
     fun open(context: Context, file: File, mimeType: String): Boolean {
