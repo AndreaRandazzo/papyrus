@@ -3,6 +3,7 @@ package io.github.andrearandazzo.papyrus.data.backup
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
+import io.github.andrearandazzo.papyrus.data.Attachment
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
 import io.github.andrearandazzo.papyrus.data.DocumentRepository
@@ -32,6 +33,7 @@ class BackupManager(
 ) {
     private val documentDao = database.documentDao()
     private val categoryDao = database.categoryDao()
+    private val attachmentDao = database.attachmentDao()
 
     /**
      * Writes every document and category to [target], encrypted with [password] if given (it's
@@ -40,6 +42,7 @@ class BackupManager(
     suspend fun export(target: Uri, password: CharArray? = null): Int = withContext(Dispatchers.IO) {
         val categories = categoryDao.getAll()
         val allDocuments = documentDao.getAll()
+        val attachments = attachmentDao.getAll().groupBy { it.documentId }
         val output = context.contentResolver.openOutputStream(target, "wt")
             ?: throw IOException("Cannot write $target")
         val file = output.buffered()
@@ -53,12 +56,17 @@ class BackupManager(
         }
         ZipOutputStream(sink).use { zip ->
             zip.putNextEntry(ZipEntry(BackupFormat.MANIFEST))
-            zip.write(BackupFormat.toJson(categories, allDocuments, System.currentTimeMillis()).toByteArray())
+            zip.write(BackupFormat.toJson(categories, allDocuments, System.currentTimeMillis(), attachments).toByteArray())
             zip.closeEntry()
             for (document in allDocuments) {
                 zip.putNextEntry(ZipEntry(BackupFormat.FILES_DIR + document.fileName))
                 documents.fileOf(document).inputStream().use { it.copyTo(zip) }
                 zip.closeEntry()
+                for (attachment in attachments[document.id].orEmpty()) {
+                    zip.putNextEntry(ZipEntry(BackupFormat.FILES_DIR + attachment.fileName))
+                    documents.fileOf(attachment).inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
             }
         }
         allDocuments.size
@@ -85,7 +93,10 @@ class BackupManager(
 
         val existingKeys = documentDao.getAll().map { it.duplicateKey() }.toSet()
         val toRestore = manifest.documents.filter { it.duplicateKey() !in existingKeys }
-        val wanted = toRestore.associateBy { it.file }
+        // Every file to bring back, with its expected size: documents' own and their attachments.
+        val wanted: Map<String, Long> = toRestore.flatMap { document ->
+            listOf(document.file to document.sizeBytes) + document.attachments.map { it.file to it.sizeBytes }
+        }.toMap()
 
         // 1. Copy the files into storage under new names.
         val copied = mutableMapOf<String, File>()
@@ -93,12 +104,12 @@ class BackupManager(
             openZip(source, key) { zip ->
                 generateSequence { zip.nextEntry }.forEach { entry ->
                     val name = entry.name.removePrefix(BackupFormat.FILES_DIR)
-                    val document = wanted[name]
-                    if (entry.name.startsWith(BackupFormat.FILES_DIR) && document != null && name !in copied) {
+                    val expectedSize = wanted[name]
+                    if (entry.name.startsWith(BackupFormat.FILES_DIR) && expectedSize != null && name !in copied) {
                         val target = documents.newStorageFile(name.substringAfterLast('.', ""))
                         copied[name] = target
                         val size = target.outputStream().use { zip.copyTo(it) }
-                        if (size != document.sizeBytes) throw InvalidBackupException("Size mismatch for $name")
+                        if (size != expectedSize) throw InvalidBackupException("Size mismatch for $name")
                     }
                 }
             }
@@ -109,7 +120,7 @@ class BackupManager(
             database.withTransaction {
                 val categoryIds = restoreCategories(manifest.categories)
                 for (document in toRestore) {
-                    documentDao.insert(
+                    val id = documentDao.insert(
                         Document(
                             title = document.title,
                             fileName = copied.getValue(document.file).name,
@@ -121,6 +132,18 @@ class BackupManager(
                             expiresAt = document.expiresAt,
                         ),
                     )
+                    for (attachment in document.attachments) {
+                        attachmentDao.insert(
+                            Attachment(
+                                documentId = id,
+                                name = attachment.name,
+                                fileName = copied.getValue(attachment.file).name,
+                                mimeType = attachment.mimeType,
+                                sizeBytes = attachment.sizeBytes,
+                                addedAt = attachment.addedAt,
+                            ),
+                        )
+                    }
                 }
             }
         } catch (e: Throwable) {

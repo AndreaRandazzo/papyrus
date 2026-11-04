@@ -8,6 +8,7 @@ import android.util.Log
 import android.webkit.MimeTypeMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 import java.io.File
@@ -26,6 +27,8 @@ data class ImportResult(val imported: Int, val failed: Int, val deletableOrigina
 class DocumentRepository(
     private val context: Context,
     private val dao: DocumentDao,
+    private val attachments: AttachmentDao,
+    private val texts: DocumentTextDao,
 ) {
     private val storageDir = File(context.filesDir, "documents").apply { mkdirs() }
 
@@ -115,32 +118,113 @@ class DocumentRepository(
      * The copy means the document survives even if the original is deleted.
      */
     suspend fun import(uri: Uri, categoryId: Long?): Document = withContext(Dispatchers.IO) {
-        val resolver = context.contentResolver
-        val displayName = displayName(uri)
-        val mimeType = resolver.getType(uri) ?: "application/octet-stream"
-        val extension = displayName.substringAfterLast('.', missingDelimiterValue = "")
-            .ifEmpty { MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType).orEmpty() }
-
-        val target = newStorageFile(extension)
+        val copy = copyIn(uri)
         try {
-            val size = resolver.openInputStream(uri)?.use { input ->
-                target.outputStream().use { output -> input.copyTo(output) }
-            } ?: throw IOException("Cannot open $uri")
-
             val document = Document(
-                title = displayName.substringBeforeLast('.').ifBlank { displayName },
-                fileName = target.name,
-                mimeType = mimeType,
-                sizeBytes = size,
+                title = copy.name.substringBeforeLast('.').ifBlank { copy.name },
+                fileName = copy.file.name,
+                mimeType = copy.mimeType,
+                sizeBytes = copy.size,
                 importedAt = System.currentTimeMillis(),
                 categoryId = categoryId,
             )
             document.copy(id = dao.insert(document))
         } catch (e: Throwable) {
             // Never leave an orphan file without its database row.
+            copy.file.delete()
+            throw e
+        }
+    }
+
+    /** A file copied into storage from another app, before it's recorded. */
+    private class Copy(val file: File, val name: String, val mimeType: String, val size: Long)
+
+    private suspend fun copyIn(uri: Uri): Copy = withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        val displayName = displayName(uri)
+        val mimeType = resolver.getType(uri) ?: "application/octet-stream"
+        val extension = displayName.substringAfterLast('.', missingDelimiterValue = "")
+            .ifEmpty { MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType).orEmpty() }
+        val target = newStorageFile(extension)
+        try {
+            val size = resolver.openInputStream(uri)?.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            } ?: throw IOException("Cannot open $uri")
+            Copy(target, displayName, mimeType, size)
+        } catch (e: Throwable) {
             target.delete()
             throw e
         }
+    }
+
+    fun observeAttachments(documentId: Long): Flow<List<Attachment>> = attachments.observeFor(documentId)
+
+    suspend fun attachmentsOf(documentId: Long): List<Attachment> = attachments.getFor(documentId)
+
+    /** Attachment count per document id, for the Library. */
+    val attachmentCounts: Flow<Map<Long, Int>> = attachments.observeCounts().map { rows -> rows.associate { it.documentId to it.count } }
+
+    fun fileOf(attachment: Attachment): File = File(storageDir, attachment.fileName)
+
+    /**
+     * Copies [uris] into storage as attachments of [document]. Like [importAll], a file that can't
+     * be read is skipped and counted. The document's text is read again, attachments included.
+     */
+    suspend fun addAttachments(document: Document, uris: List<Uri>): ImportResult {
+        var failed = 0
+        for (uri in uris) {
+            try {
+                val copy = copyIn(uri)
+                try {
+                    attachments.insert(
+                        Attachment(
+                            documentId = document.id,
+                            name = copy.name,
+                            fileName = copy.file.name,
+                            mimeType = copy.mimeType,
+                            sizeBytes = copy.size,
+                            addedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                } catch (e: Throwable) {
+                    copy.file.delete()
+                    throw e
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Attachment failed for $uri", e)
+                failed++
+            }
+        }
+        if (failed < uris.size) texts.forget(document.id)
+        return ImportResult(imported = uris.size - failed, failed = failed)
+    }
+
+    suspend fun removeAttachment(attachment: Attachment) = withContext(Dispatchers.IO) {
+        attachments.delete(attachment)
+        fileOf(attachment).delete()
+        File(sharedDir, "a${attachment.id}").deleteRecursively()
+        texts.forget(attachment.documentId)
+    }
+
+    /**
+     * Replaces the document's own file with [uri] (e.g. a renewed ID card), keeping its title,
+     * category, note, expiry and attachments. Returns the updated document.
+     */
+    suspend fun replaceFile(document: Document, uri: Uri): Document = withContext(Dispatchers.IO) {
+        val copy = copyIn(uri)
+        val updated = document.copy(fileName = copy.file.name, mimeType = copy.mimeType, sizeBytes = copy.size)
+        try {
+            dao.update(updated)
+        } catch (e: Throwable) {
+            copy.file.delete()
+            throw e
+        }
+        fileOf(document).delete()
+        File(sharedDir, document.id.toString()).deleteRecursively()
+        texts.forget(document.id)
+        updated
     }
 
     /**
@@ -184,9 +268,22 @@ class DocumentRepository(
         fileOf(document).copyTo(File(dir, name))
     }
 
+    /** Like [exportCopy], for an attachment: named as it was added, e.g. "Allegato B.pdf". */
+    suspend fun exportCopy(attachment: Attachment): File = withContext(Dispatchers.IO) {
+        removeOldSharedCopies()
+        val dir = File(sharedDir, "a${attachment.id}")
+        dir.deleteRecursively()
+        dir.mkdirs()
+        val extension = attachment.fileName.substringAfterLast('.', missingDelimiterValue = "")
+        val base = safeFileName(attachment.name.substringBeforeLast('.').ifBlank { attachment.name })
+        fileOf(attachment).copyTo(File(dir, base + if (extension.isEmpty()) "" else ".$extension"))
+    }
+
     /** Removes the record first, then the files, so a failure never leaves a record without its file. */
     suspend fun delete(document: Document) = withContext(Dispatchers.IO) {
-        dao.delete(document)
+        val attached = attachments.getFor(document.id)
+        dao.delete(document) // attachments' rows go with it
+        attached.forEach { fileOf(it).delete() }
         fileOf(document).delete()
         File(sharedDir, document.id.toString()).deleteRecursively()
     }

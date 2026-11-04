@@ -31,7 +31,9 @@ class PapyrusApp : Application() {
             .build()
     }
 
-    val documentRepository by lazy { DocumentRepository(this, database.documentDao()) }
+    val documentRepository by lazy {
+        DocumentRepository(this, database.documentDao(), database.attachmentDao(), database.documentTextDao())
+    }
     val categoryRepository by lazy { CategoryRepository(database.categoryDao()) }
     val thumbnails by lazy { ThumbnailLoader(documentRepository) }
     val backupManager by lazy { BackupManager(this, database, documentRepository) }

@@ -303,6 +303,22 @@
     <string name="unlock">Sblocca</string>
     <string name="unlock_prompt_title">Sblocca Papyrus</string>
     <string name="app_lock_confirm_title">Attiva il blocco app</string>
+    <string name="attachments">Allegati</string>
+    <string name="attachments_none">Nessun allegato: aggiungi allegati, ricevute o altri file che vanno con questo documento.</string>
+    <string name="attachments_add">Aggiungi allegati</string>
+    <string name="replace_file">Sostituisci file</string>
+    <string name="attachment_actions">Azioni per %s</string>
+    <string name="remove_attachment_title">Rimuovere “%s”?</string>
+    <string name="remove_attachment_body">L\'allegato verrà rimosso da Papyrus. L\'operazione non si può annullare.</string>
+    <string name="replace_file_title">Sostituire il file?</string>
+    <string name="replace_file_body">Scegli il nuovo file, ad es. un documento rinnovato. Titolo, categoria, nota, scadenza e allegati restano; il file attuale viene rimosso da Papyrus.</string>
+    <string name="replace_file_choose">Scegli file</string>
+    <string name="file_replaced">File sostituito</string>
+    <plurals name="attachment_count">
+        <item quantity="one">+%d allegato</item>
+        <item quantity="many">+%d allegati</item>
+        <item quantity="other">+%d allegati</item>
+    </plurals>
     <string name="text_inside">Testo nel documento</string>
     <string name="copy">Copia</string>
     <string name="text_reading">Lettura del testo in corso…</string>

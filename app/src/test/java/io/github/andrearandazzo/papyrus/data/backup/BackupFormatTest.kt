@@ -3,6 +3,7 @@ package io.github.andrearandazzo.papyrus.data.backup
 import io.github.andrearandazzo.papyrus.data.Category
 import io.github.andrearandazzo.papyrus.data.Document
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -96,5 +97,31 @@ class BackupFormatTest {
     fun unknownCategoryBecomesUncategorized() {
         val manifest = BackupFormat.parse(BackupFormat.toJson(emptyList(), listOf(insurance), 0))
         assertEquals(null, manifest.documents.single().categoryId)
+    }
+
+    @Test
+    fun attachmentsRoundTripAndOldBackupsHaveNone() {
+        val annex = io.github.andrearandazzo.papyrus.data.Attachment(
+            id = 7, documentId = insurance.id, name = "Allegato B.pdf", fileName = "b.pdf",
+            mimeType = "application/pdf", sizeBytes = 42, addedAt = 5,
+        )
+        val manifest = BackupFormat.parse(BackupFormat.toJson(emptyList(), listOf(insurance), 0, mapOf(insurance.id to listOf(annex))))
+        assertEquals(
+            listOf(BackupAttachment(name = "Allegato B.pdf", file = "b.pdf", mimeType = "application/pdf", sizeBytes = 42, addedAt = 5)),
+            manifest.documents.single().attachments,
+        )
+        // A backup from before attachments: no field at all.
+        val old = BackupFormat.toJson(emptyList(), listOf(insurance), 0).replace(Regex(",\\s*\"attachments\": \\[\\s*]"), "")
+        assertTrue(!old.contains("attachments"))
+        assertEquals(emptyList<BackupAttachment>(), BackupFormat.parse(old).documents.single().attachments)
+    }
+
+    @Test(expected = InvalidBackupException::class)
+    fun attachmentPathsAreRejected() {
+        val annex = io.github.andrearandazzo.papyrus.data.Attachment(
+            documentId = insurance.id, name = "x", fileName = "../../databases/papyrus.db",
+            mimeType = "application/pdf", sizeBytes = 1, addedAt = 0,
+        )
+        BackupFormat.parse(BackupFormat.toJson(emptyList(), listOf(insurance), 0, mapOf(insurance.id to listOf(annex))))
     }
 }

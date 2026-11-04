@@ -111,14 +111,6 @@ import io.github.andrearandazzo.papyrus.ui.formatInstantDate
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
-/** File types offered in the system file picker. */
-private val IMPORTABLE_TYPES = arrayOf(
-    "application/pdf",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "image/*",
-)
-
 /** What a document's "⋮" menu can do, and the empty states' buttons. */
 private class DocumentActions(
     val open: (Document) -> Unit,
@@ -157,7 +149,7 @@ fun HomeScreen(
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         viewModel.import(uris)
     }
-    val pickFiles = { picker.launch(IMPORTABLE_TYPES) }
+    val pickFiles = { picker.launch(DocumentIntents.IMPORTABLE_TYPES) }
     // "+" offers both ways of adding: scanning paper or picking files.
     val addDocuments = { showAddMenu = true }
 
@@ -451,9 +443,9 @@ private fun Documents(state: HomeState, grid: Boolean, actions: DocumentActions,
             // A new sort order starts again from the top instead of following the visible item.
             key(state.filter.sort) {
                 if (grid) {
-                    DocumentGrid(state.documents, categoryNames, state.snippets, actions)
+                    DocumentGrid(state.documents, categoryNames, state.snippets, state.attachmentCounts, actions)
                 } else {
-                    DocumentList(state.documents, categoryNames, state.snippets, actions)
+                    DocumentList(state.documents, categoryNames, state.snippets, state.attachmentCounts, actions)
                 }
             }
         }
@@ -551,6 +543,7 @@ private fun DocumentList(
     documents: List<Document>,
     categoryNames: Map<Long, String>,
     snippets: Map<Long, String>,
+    attachmentCounts: Map<Long, Int>,
     actions: DocumentActions,
 ) {
     // Bottom padding keeps the last row clear of the "+" button.
@@ -566,7 +559,7 @@ private fun DocumentList(
                 DocumentTile(document, Modifier.size(width = 64.dp, height = 76.dp))
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    DocumentText(document, categoryNames[document.categoryId], snippets[document.id])
+                    DocumentText(document, categoryNames[document.categoryId], snippets[document.id], attachmentCounts[document.id] ?: 0)
                 }
                 DocumentMenu(document, actions)
             }
@@ -580,6 +573,7 @@ private fun DocumentGrid(
     documents: List<Document>,
     categoryNames: Map<Long, String>,
     snippets: Map<Long, String>,
+    attachmentCounts: Map<Long, Int>,
     actions: DocumentActions,
 ) {
     LazyVerticalGrid(
@@ -599,7 +593,7 @@ private fun DocumentGrid(
                 // Inset so text near the bottom corners isn't clipped by the card's rounded shape.
                 Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)) {
                     Column(Modifier.weight(1f).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        DocumentText(document, categoryNames[document.categoryId], snippets[document.id], compact = true)
+                        DocumentText(document, categoryNames[document.categoryId], snippets[document.id], attachmentCounts[document.id] ?: 0, compact = true)
                     }
                     DocumentMenu(document, actions)
                 }
@@ -613,7 +607,7 @@ private fun DocumentGrid(
  * the document, the words around the match.
  */
 @Composable
-private fun DocumentText(document: Document, categoryName: String?, snippet: String?, compact: Boolean = false) {
+private fun DocumentText(document: Document, categoryName: String?, snippet: String?, attachments: Int, compact: Boolean = false) {
     val context = LocalContext.current
     Text(
         document.title,
@@ -621,12 +615,14 @@ private fun DocumentText(document: Document, categoryName: String?, snippet: Str
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
     )
+    val attached = if (attachments > 0) pluralStringResource(R.plurals.attachment_count, attachments, attachments) else null
     val details = if (compact) {
-        listOfNotNull(categoryName, stringResource(document.kind.label()))
+        listOfNotNull(categoryName, stringResource(document.kind.label()), attached)
     } else {
         listOfNotNull(
             categoryName,
             stringResource(document.kind.label()),
+            attached,
             Formatter.formatShortFileSize(context, document.sizeBytes),
             formatInstantDate(document.importedAt),
         )
