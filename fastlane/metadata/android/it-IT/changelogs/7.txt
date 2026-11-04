@@ -1,0 +1,1 @@
+Novità: backup protetti da password (AES-256: solo chi conosce la password può aprire il file) e allegati: più file in un solo documento, come un contratto con i suoi allegati o i due lati della carta d'identità. Sostituisci il file di un documento con uno più recente, mantenendo i dettagli. La ricerca trova le parole anche negli allegati.
