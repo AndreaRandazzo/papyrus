@@ -226,7 +226,22 @@
 
     <!-- Backup screen -->
     <string name="backup_hero_title">Keep a copy, just in case</string>
-    <string name="backup_hero_body">Your backup is a single file, saved wherever you choose. It isn\'t encrypted, so keep it somewhere safe.</string>
+    <string name="backup_hero_body">Your backup is a single file, saved wherever you choose. Protect it with a password, or keep it somewhere safe.</string>
+    <string name="backup_password_title">Protect with a password?</string>
+    <string name="backup_password_body">With a password, the backup is encrypted: only someone who knows it can open the file.</string>
+    <string name="password">Password</string>
+    <string name="password_repeat">Repeat password</string>
+    <plurals name="password_too_short">
+        <item quantity="one">At least %d character</item>
+        <item quantity="other">At least %d characters</item>
+    </plurals>
+    <string name="password_mismatch">The passwords don\'t match</string>
+    <string name="backup_password_warning">Papyrus can\'t recover a forgotten password: without it, the backup can\'t be restored. Write it down somewhere safe.</string>
+    <string name="backup_save_protected">Save with password</string>
+    <string name="backup_save_plain">Save without</string>
+    <string name="restore_password_title">Password-protected backup</string>
+    <string name="restore_password_body">Type the password used when this backup was saved.</string>
+    <string name="password_wrong">Wrong password. Try again.</string>
     <string name="last_backup">Last backup</string>
     <string name="never">Never</string>
     <string name="backup_due">Backup due</string>

@@ -1,6 +1,7 @@
 package io.github.andrearandazzo.papyrus.ui.backup
 
 import android.content.res.Resources
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -31,7 +32,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -63,10 +66,14 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
     val hasDocuments by viewModel.hasDocuments.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    var showExportDialog by remember { mutableStateOf(false) }
+
     // The system pickers need no storage permission: the user chooses exactly where we read or write.
-    val target = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
-        uri?.let(viewModel::export)
-    }
+    val onTarget = { uri: Uri? -> if (uri == null) viewModel.cancelExport() else viewModel.export(uri) }
+    val plainTarget = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip"), onTarget)
+    // A protected backup isn't a ZIP any more: its own extension, so nothing tries to open it as one.
+    val protectedTarget =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream"), onTarget)
     val source = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(viewModel::restore)
     }
@@ -102,7 +109,7 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
                     title = stringResource(R.string.backup_export),
                     body = stringResource(R.string.backup_export_body),
                     enabled = hasDocuments && !viewModel.busy,
-                    onClick = { target.launch("papyrus-backup-${LocalDate.now()}.zip") },
+                    onClick = { showExportDialog = true },
                 )
                 ActionCard(
                     icon = R.drawable.ic_duo_restore,
@@ -119,6 +126,30 @@ fun BackupScreen(viewModel: BackupViewModel = viewModel(factory = BackupViewMode
                 )
             }
         }
+    }
+
+    if (showExportDialog) {
+        ExportPasswordDialog(
+            onExport = { password ->
+                showExportDialog = false
+                viewModel.prepareExport(password)
+                if (password == null) {
+                    plainTarget.launch("papyrus-backup-${LocalDate.now()}.zip")
+                } else {
+                    protectedTarget.launch("papyrus-backup-${LocalDate.now()}.papyrus")
+                }
+            },
+            onDismiss = { showExportDialog = false },
+        )
+    }
+
+    viewModel.passwordNeededFor?.let { uri ->
+        RestorePasswordDialog(
+            wrong = viewModel.wrongPassword,
+            busy = viewModel.busy,
+            onRestore = { password -> viewModel.restore(uri, password) },
+            onDismiss = viewModel::cancelPassword,
+        )
     }
 }
 

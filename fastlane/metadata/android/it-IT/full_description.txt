@@ -17,8 +17,8 @@
 <li>Filtra per tipo e data di aggiunta, ordina per data, titolo o scadenza in entrambe le direzioni</li>
 <li>Anteprime delle pagine PDF e delle foto, vista a elenco, a griglia o a cartelle</li>
 <li>Apri e condividi i documenti con altre app</li>
-<li>Backup e ripristino di tutta la libreria in un unico file</li>
+<li>Backup e ripristino di tutta la libreria in un unico file, anche protetto da password</li>
 <li>Tema chiaro e scuro, italiano e inglese</li>
 </ul>
 
-<p><b>Sui backup:</b> il backup è un normale file ZIP salvato dove preferisci. Non è cifrato, quindi conservalo in un posto sicuro.</p>
+<p><b>Sui backup:</b> il backup è un unico file salvato dove preferisci. Con una password è cifrato (AES-256); senza, è un normale file ZIP, quindi conservalo in un posto sicuro.</p>

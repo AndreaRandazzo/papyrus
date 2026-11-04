@@ -15,6 +15,8 @@ import io.github.andrearandazzo.papyrus.data.DocumentRepository
 import io.github.andrearandazzo.papyrus.data.UserPreferences
 import io.github.andrearandazzo.papyrus.data.backup.BackupManager
 import io.github.andrearandazzo.papyrus.data.backup.InvalidBackupException
+import io.github.andrearandazzo.papyrus.data.backup.PasswordRequiredException
+import io.github.andrearandazzo.papyrus.data.backup.WrongPasswordException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +46,31 @@ class BackupViewModel(
     var busy by mutableStateOf(false)
         private set
 
+    /** A password-protected backup the user picked to restore, waiting for its password. */
+    var passwordNeededFor by mutableStateOf<Uri?>(null)
+        private set
+
+    /** The last password typed for [passwordNeededFor] didn't open it. */
+    var wrongPassword by mutableStateOf(false)
+        private set
+
+    /** Typed in the export dialog, kept only until the user picks where to save. */
+    private var exportPassword: CharArray? = null
+
+    /** The export dialog was confirmed; [password] null means a plain, unprotected backup. */
+    fun prepareExport(password: CharArray?) {
+        exportPassword?.fill(' ')
+        exportPassword = password
+    }
+
+    /** The user cancelled choosing where to save. */
+    fun cancelExport() = prepareExport(null)
+
+    fun cancelPassword() {
+        passwordNeededFor = null
+        wrongPassword = false
+    }
+
     /** When the last backup was saved, or null if never. */
     var lastBackupAt by mutableStateOf(preferences.lastBackupAt)
         private set
@@ -59,8 +86,10 @@ class BackupViewModel(
     val messages: Flow<BackupMessage> = _messages.receiveAsFlow()
 
     fun export(target: Uri) = run {
+        val password = exportPassword
+        exportPassword = null
         try {
-            val count = backupManager.export(target)
+            val count = backupManager.export(target, password)
             val now = System.currentTimeMillis()
             preferences.lastBackupAt = now
             lastBackupAt = now
@@ -73,11 +102,21 @@ class BackupViewModel(
         }
     }
 
-    fun restore(source: Uri) = run {
+    /** Restores [source]; a protected backup asks for its [password] first (see [passwordNeededFor]). */
+    fun restore(source: Uri, password: CharArray? = null) = run {
         try {
-            backupManager.restore(source).let { BackupMessage.Restored(it.restored, it.alreadyPresent) }
+            backupManager.restore(source, password).let {
+                cancelPassword()
+                BackupMessage.Restored(it.restored, it.alreadyPresent)
+            }
         } catch (e: CancellationException) {
             throw e
+        } catch (e: PasswordRequiredException) {
+            passwordNeededFor = source
+            null
+        } catch (e: WrongPasswordException) {
+            wrongPassword = true
+            null
         } catch (e: InvalidBackupException) {
             Log.w(TAG, "Not a backup", e)
             BackupMessage.NotABackup
@@ -87,8 +126,11 @@ class BackupViewModel(
         }
     }
 
-    /** Runs [work] in the ViewModel's scope (survives rotation), showing progress, then its message. */
-    private fun run(work: suspend () -> BackupMessage) {
+    /**
+     * Runs [work] in the ViewModel's scope (survives rotation), showing progress, then its message
+     * if any (asking for a password has none).
+     */
+    private fun run(work: suspend () -> BackupMessage?) {
         viewModelScope.launch {
             busy = true
             val message = try {
@@ -96,9 +138,11 @@ class BackupViewModel(
             } finally {
                 busy = false
             }
-            _messages.send(message)
+            message?.let { _messages.send(it) }
         }
     }
+
+    override fun onCleared() = prepareExport(null)
 
     companion object {
         private const val TAG = "BackupViewModel"

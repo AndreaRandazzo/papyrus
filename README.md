@@ -42,14 +42,22 @@ place: ID cards, passports, insurance policies, medical tests, contracts, receip
   text recognition (Italian and English). Nothing is sent anywhere
 - Previews of PDF pages and photos; list, grid or folders view
 - Open and share documents with other apps
-- Backup and restore the whole library as one ZIP file
+- Backup and restore the whole library as one file, optionally protected with a password
 - Light and dark theme, three color palettes (Teal, Sage, Sun) and four text sizes; English and Italian;
   report a bug or request a feature from Settings
 
 ### About backups
 
-A backup is a normal ZIP file (`manifest.json` plus your files) saved wherever you choose. You can
-open it on a computer without Papyrus. **It isn't encrypted**, so keep it somewhere safe.
+A backup is one file (`manifest.json` plus your files in a ZIP) saved wherever you choose.
+
+- **With a password** (`.papyrus` file): the ZIP is encrypted with AES-256-GCM, in 64 KB chunks
+  that are each authenticated, so any change or cut-off is detected. The key comes from the password
+  through PBKDF2-HMAC-SHA256 with 600,000 rounds and a random salt. Nothing else is needed to restore
+  it but the password, and **a forgotten password can't be recovered**.
+- **Without a password** (`.zip` file): a normal ZIP you can open on a computer without Papyrus.
+  It isn't encrypted, so keep it somewhere safe.
+
+The recognized text of documents isn't included; it's read again after a restore.
 
 ## Install
 
